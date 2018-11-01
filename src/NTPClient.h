@@ -3,38 +3,28 @@
 
 #include <WiFiUdp.h>
 
-#define DBG_PORT Serial
-
-#define DEBUG_NTPCLIENT
-
-#ifdef DEBUG_NTPCLIENT
-#define DEBUGLOG(...) DBG_PORT.printf(__VA_ARGS__)
-#else
-#define DEBUGLOG(...)
-#endif
-
 #define DEFAULT_NTP_SERVER "pool.ntp.org" // Default international NTP server
 #define DEFAULT_NTP_PORT 123              // Default local udp port
 #define NTP_TIMEOUT 1500                  // Response timeout for NTP requests
 
 // leap year calculator expects year argument as years offset from 1970
-#define LEAP_YEAR(Y)     ( ((1970+(Y))>0) && !((1970+(Y))%4) && ( ((1970+(Y))%100) || !((1970+(Y))%400) ) )
+#define LEAP_YEAR(Y) (((1970 + (Y)) > 0) && !((1970 + (Y)) % 4) && (((1970 + (Y)) % 100) || !((1970 + (Y)) % 400)))
 
 #define SEVENTY_YEARS 2208988800UL
 
 const int NTP_PACKET_SIZE = 48; // NTP time is in the first 48 bytes of message
 
-static  const uint8_t monthDays[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }; // API starts months from 1, this array starts from 0
+static const uint8_t monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}; // API starts months from 1, this array starts from 0
 
 typedef struct
 {
     uint8_t Second;
     uint8_t Minute;
     uint8_t Hour;
-    uint8_t Wday; // day of week, sunday is day 1
+    uint8_t Wday; // day of week, monday is day 1
     uint8_t Day;
     uint8_t Month;
-    uint8_t Year; // offset from 1970;
+    uint16_t Year;
 } date_time;
 
 bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer);
@@ -57,7 +47,7 @@ date_time breakTime(uint32_t time)
     time /= 60; // now it is hours
     dt.Hour = time % 24;
     time /= 24;                     // now it is days
-    dt.Wday = ((time + 4) % 7) + 1; // Sunday is day 1
+    dt.Wday = ((time + 4) % 7) + 2; // Monday is day 1
 
     year = 0;
     days = 0;
@@ -65,7 +55,7 @@ date_time breakTime(uint32_t time)
     {
         year++;
     }
-    dt.Year = year; // year is offset from 1970
+    dt.Year = 1970 + year; // year is offset from 1970
 
     days -= LEAP_YEAR(year) ? 366 : 365;
     time -= days; // now it is days in this year, starting at 0
@@ -110,10 +100,9 @@ uint32_t getTime()
 {
     uint8_t ntpPacketBuffer[NTP_PACKET_SIZE]; //Buffer to store response message
 
-    DEBUGLOG("Starting UDP\n");
     WiFiUDP udp;
     udp.begin(DEFAULT_NTP_PORT);
-    DEBUGLOG("UDP port: %d\n", udp.localPort());
+    DEBUGLOG("NTPClient", "Starting UDP (address: %s, port: %d)", DEFAULT_NTP_SERVER, udp.localPort());
     while (udp.parsePacket() > 0)
         ; // discard any previously received packets
 
@@ -124,7 +113,6 @@ uint32_t getTime()
         int size = udp.parsePacket();
         if (size >= NTP_PACKET_SIZE)
         {
-            DEBUGLOG("-- Receive NTP Response\n");
             udp.read(ntpPacketBuffer, NTP_PACKET_SIZE); // read packet into the buffer
             unsigned long timeValue;
             // convert four bytes starting at location 40 to a long integer
@@ -133,10 +121,11 @@ uint32_t getTime()
             timeValue |= (unsigned long)ntpPacketBuffer[42] << 8;
             timeValue |= (unsigned long)ntpPacketBuffer[43];
             udp.stop();
+            DEBUGLOG("NTPClient", "-- Receive NTP Response (time: %u)", timeValue);
             return timeValue - SEVENTY_YEARS;
         }
     }
-    DEBUGLOG("-- No NTP Response :-(\n");
+    DEBUGLOG("NTPClient", "-- No NTP Response");
     udp.stop();
     return 0; // return 0 if unable to get the time
 }
