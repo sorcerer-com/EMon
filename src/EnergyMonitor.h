@@ -37,24 +37,24 @@ class EnergyMonitor
             return;
         irms /= batchesCount;
         current = irms;
-        irms *= voltage;
-        if (irms < 0.1 * voltage) // noise
+        if (irms < 0.1) // noise
             irms = 0.0;
-        power += round(irms); // TODO: * 0.88); // !!! fix total constant
+        power += round(irms * voltage);
         counter++;
-        DEBUGLOG("EnergyMonitor", "Channel: %d, Irms: %f, power: %d in %d counts",
-                 channel, irms, power, counter);
+        //DEBUGLOG("EnergyMonitor", "Channel: %d, Irms: %f, power: %d in %d counts",
+        //         channel, irms, power, counter);
         irms = 0;
         batchIdx = 0;
     }
 
+    // returns consumed energy in watts per 0.01 hour
     uint32_t getEnergy()
     {
         uint32_t delta = millis() - timer;
         // power / ((3600 * 1000) / avgDelta)
         uint64_t energy = power * delta / counter / 3600;
         DEBUGLOG("EnergyMonitor", "Channel: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
-                 channel, power, delta, counter, energy);
+                 channel, (uint32_t)power, delta, counter, (uint32_t)energy);
         energy = round(energy / (float)10);
 
         timer = millis();

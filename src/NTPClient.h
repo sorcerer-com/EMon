@@ -95,7 +95,7 @@ date_time breakTime(uint32_t time)
     return dt;
 }
 
-// get UNIX time
+// get UNIX time in seconds
 uint32_t getTime()
 {
     uint8_t ntpPacketBuffer[NTP_PACKET_SIZE]; //Buffer to store response message
