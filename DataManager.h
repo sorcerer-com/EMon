@@ -10,7 +10,7 @@
 
 class DataManagerClass
 {
-  public: // TODO: private
+  private:
     uint32_t startTime;
     uint32_t timer;
 
@@ -25,6 +25,8 @@ class DataManagerClass
 
     DataManagerClass() : monitor1(ads, 0), monitor2(ads, 1), monitor3(ads, 2), monitor4(ads, 3)
     {
+        startTime = 0;
+        timer = 0;
     }
 
     void setup()
@@ -32,11 +34,20 @@ class DataManagerClass
         EEPROM.begin(4096);
         readEEPROM(settings);
 
-        startTime = getTime();
-        date_time dt = breakTime(startTime);
+        // retry 5 times to get the time, else restart
+        for (int i = 0; i < 5; i++)
+        {
+            startTime = getTime();
+            if (startTime != 0)
+                break;
+        }
+        if (startTime == 0) // TODO: lose data, think to save data without startTime
+            ESP.restart();
+
+        date_time dt = getCurrentTime();
         DEBUGLOG("DataManager", "Start time: %02d:%02d:%02d %02d/%02d/%04d",
                  dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
-        timer = millis() - (dt.Minute * 60 + dt.Second) * 1000;
+        timer = millis() - (dt.Minute * SECONDS_IN_A_MINUTE + dt.Second) * MILLIS_IN_A_SECOND;
 
         ads.setGain(GAIN_ONE); // 1x gain   +/- 4.096V  1 bit = 2mV      0.125mV
         ads.begin();
@@ -48,12 +59,11 @@ class DataManagerClass
             getMonitor(i).update();
 
         // TODO: start bill day isn't taken in to count
-        if (millis() - timer > 60 * 60 * 1000) // TODO: to const / do it more offten?
+        if (millis() - timer > MILLIS_IN_AN_HOUR) // TODO:do it more offten?
         {
             timer = millis();
 
-            uint32_t currentTime = startTime + settings.timeZone * 3600 + (millis() / 1000); // TODO: maybe to consts (hour & millis)
-            date_time dt = breakTime(currentTime);
+            date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %02d:%02d:%02d %02d/%02d/%04d",
                      dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
 
@@ -76,6 +86,11 @@ class DataManagerClass
     inline double getCurrent(const int &monitorIdx)
     {
         return getMonitor(monitorIdx).current;
+    }
+
+    inline date_time getCurrentTime()
+    {
+        return breakTime(startTime + settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
     }
 
   private:

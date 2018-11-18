@@ -1,6 +1,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <EEPROM.h>
+
 #define DEBUG
 #ifdef DEBUG
 #define DEBUGLOG(category, ...)       \
@@ -11,7 +13,10 @@
 #define DEBUGLOG(category, ...)
 #endif
 
-#include <EEPROM.h>
+#define MILLIS_IN_A_SECOND 1000
+#define SECONDS_IN_A_MINUTE 60
+#define SECONDS_IN_AN_HOUR 3600
+#define MILLIS_IN_AN_HOUR 3600000
 
 #define MONITORS_COUNT 4
 #define TARIFFS_COUNT 3
@@ -21,7 +26,7 @@ struct Settings
     int8_t timeZone = 0;
     uint8_t tariffHours[TARIFFS_COUNT] = {0, 0, 0};
 
-    // x3 for different tariffs
+    // xTARIFFS_COUNT for different tariffs
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
