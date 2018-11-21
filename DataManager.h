@@ -41,7 +41,7 @@ class DataManagerClass
             if (startTime != 0)
                 break;
         }
-        if (startTime == 0) // TODO: lose data, think to save data without startTime
+        if (startTime == 0) // TODO: lose data, think to save data without startTime (combine with do it more often)
             ESP.restart();
 
         date_time dt = getCurrentTime();
@@ -58,8 +58,7 @@ class DataManagerClass
         for (int i = 0; i < MONITORS_COUNT; i++)
             getMonitor(i).update();
 
-        // TODO: start bill day isn't taken in to count
-        if (millis() - timer > MILLIS_IN_AN_HOUR) // TODO:do it more offten?
+        if (millis() - timer > MILLIS_IN_AN_HOUR) // TODO: do it more offten?
         {
             timer = millis();
 
@@ -107,7 +106,7 @@ class DataManagerClass
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;
-        if (dt.Day == 2) // the data for the first day of the new month is full
+        if (dt.Day == settings.billDay + 1) // the data for the first day of the new bill is full
         {
             for (int i = 0; i < MONITORS_COUNT; i++)
             {

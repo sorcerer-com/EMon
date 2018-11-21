@@ -23,13 +23,15 @@
 
 struct Settings
 {
-    int8_t timeZone = 0;
-    uint8_t tariffHours[TARIFFS_COUNT] = {0, 0, 0};
-
     // xTARIFFS_COUNT for different tariffs
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
+
+    int8_t timeZone = 0;
+    uint8_t tariffHours[TARIFFS_COUNT] = {0, 0, 0};
+    uint8_t billDay = 1;
+    // add new values in the end
 
     // TODO: remove / init by setup page
     Settings()
@@ -38,6 +40,7 @@ struct Settings
         tariffHours[0] = 7;
         tariffHours[1] = 23;
         tariffHours[2] = 23;
+        billDay = 6;
     }
 };
 
