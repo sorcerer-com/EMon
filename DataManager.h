@@ -87,6 +87,53 @@ class DataManagerClass
         return getMonitor(monitorIdx).current;
     }
 
+    inline double getCurrentHourEnergy(const int &monitorIdx)
+    {
+        return getMonitor(monitorIdx).getEnergy(false);
+    }
+
+    inline void getCurrentDayEnergy(const int &monitorIdx, uint32_t values[TARIFFS_COUNT])
+    {
+        date_time dt = getCurrentTime();
+        for (int t = 0; t < TARIFFS_COUNT; t++)
+            values[t] = 0;
+
+        uint32_t value = 0;
+        for (int h = 0; h <= dt.Hour; h++)
+        {
+            if (h != dt.Hour)
+                value = settings.hours[h][monitorIdx];
+            else
+                value = getCurrentHourEnergy(monitorIdx);
+
+            if (h >= settings.tariffHours[0] && h < settings.tariffHours[1])
+                values[0] += value;
+            else if (h >= settings.tariffHours[1] && h < settings.tariffHours[2])
+                values[1] += value;
+            else if (h >= settings.tariffHours[2] || h < settings.tariffHours[0])
+                values[2] += value;
+        }
+    }
+
+    inline void getCurrentMonthEnergy(const int &monitorIdx, uint32_t values[TARIFFS_COUNT])
+    {
+        date_time dt = getCurrentTime();
+
+        uint32_t currentDay[TARIFFS_COUNT];
+        getCurrentDayEnergy(monitorIdx, currentDay);
+        for (int t = 0; t < TARIFFS_COUNT; t++)
+        {
+            values[t] = 0;
+            for (int d = 0; d < dt.Day; d++)
+            {
+                if (d != dt.Day - 1)
+                    values[t] += settings.days[d][t][monitorIdx];
+                else
+                    values[t] += currentDay[t];
+            }
+        }
+    }
+
     inline date_time getCurrentTime()
     {
         return breakTime(startTime + settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
@@ -116,7 +163,6 @@ class DataManagerClass
                     for (int d = 0; d < daysCount; d++)
                     {
                         sum += settings.days[d][t][i];
-                        settings.days[d][t][i] = 0;
                     }
                     settings.months[prevMonth - 1][t][i] = sum;
 
@@ -137,7 +183,6 @@ class DataManagerClass
                     sum[1] += settings.hours[h][i];
                 else if (h >= settings.tariffHours[2] || h < settings.tariffHours[0])
                     sum[2] += settings.hours[h][i];
-                settings.hours[h][i] = 0;
             }
             settings.days[prevDay - 1][0][i] = sum[0];
             settings.days[prevDay - 1][1][i] = sum[1];

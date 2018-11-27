@@ -16,8 +16,10 @@ String toString(const uint32_t &value);
 void handleRoot()
 {
   digitalWrite(2, LOW);
-  String message = "Energy Monitor (" + WiFi.SSID() + ") 4\n";
   date_time dt = DataManager.getCurrentTime();
+  uint32_t values[TARIFFS_COUNT];
+
+  String message = "Energy Monitor (" + WiFi.SSID() + ") 4\n";
   message += "<br/>";
   message += String(dt.Hour) + ":" + String(dt.Minute) + ":" + String(dt.Second) + " " +
              String(dt.Day) + "/" + String(dt.Month) + "/" + String(dt.Year) + "\n";
@@ -58,7 +60,14 @@ void handleRoot()
     for (int i = 0; i < 24; i++)
     {
       message += "<td>";
-      message += toString(DataManager.settings.hours[i][m]) + " ";
+      if (i != dt.Hour)
+        message += toString(DataManager.settings.hours[i][m]) + " ";
+      else
+      {
+        message += "<font color='red'>";
+        message += toString(DataManager.getCurrentHourEnergy(m));
+        message += "</font> ";
+      }
       message += "</td>";
     }
     message += "</tr>";
@@ -74,6 +83,7 @@ void handleRoot()
     message += "<tr><td>";
     message += "\tMonitor " + String(m) + "\n";
     message += "</td></tr>";
+    DataManager.getCurrentDayEnergy(m, values);
     for (int t = 0; t < TARIFFS_COUNT; t++)
     {
       message += "<tr>";
@@ -83,7 +93,14 @@ void handleRoot()
       for (int i = 0; i < 31; i++)
       {
         message += "<td>";
-        message += toString(DataManager.settings.days[i][t][m]) + " ";
+        if (i != dt.Day - 1)
+          message += toString(DataManager.settings.days[i][t][m]) + " ";
+        else
+        {
+          message += "<font color='red'>";
+          message += toString(values[t]);
+          message += "</font> ";
+        }
         message += "</td>";
       }
       message += "</tr>";
@@ -100,6 +117,7 @@ void handleRoot()
     message += "<tr><td>";
     message += "\tMonitor " + String(m) + "\n";
     message += "</td></tr>";
+    DataManager.getCurrentMonthEnergy(m, values);
     for (int t = 0; t < TARIFFS_COUNT; t++)
     {
       message += "<tr>";
@@ -109,7 +127,14 @@ void handleRoot()
       for (int i = 0; i < 12; i++)
       {
         message += "<td>";
-        message += toString(DataManager.settings.months[i][t][m]) + " ";
+        if (i != dt.Month - 1)
+          message += toString(DataManager.settings.months[i][t][m]) + " ";
+        else
+        {
+          message += "<font color='red'>";
+          message += toString(values[t]);
+          message += "</font> ";
+        }
         message += "</td>";
       }
       message += "</tr>";
@@ -171,6 +196,8 @@ String toString(const uint32_t &value)
       str += "0";
   }
   str += String((value / 100) % 1000) + ".";
+  if (value > 100 && value % 100 < 10)
+    str += "0";
   str += String(value % 100);
   return str;
 }
