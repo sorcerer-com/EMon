@@ -146,10 +146,14 @@ class DataManagerClass
             return;
 
         // TODO: test it:
+        int year = dt.Year;
         int prevMonth = dt.Month - 1;
         if (prevMonth == 0)
+        {
             prevMonth += 12;
-        const uint8_t daysCount = monthDays[prevMonth - 1];
+            year--;
+        }
+        const uint8_t daysCount = getMonthLength(prevMonth, year);
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;

@@ -27,6 +27,7 @@ typedef struct
     uint16_t Year;
 } date_time;
 
+uint8_t getMonthLength(const uint8_t &month, const uint8_t &year);
 bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer);
 
 date_time breakTime(uint32_t time)
@@ -65,21 +66,7 @@ date_time breakTime(uint32_t time)
     monthLength = 0;
     for (month = 0; month < 12; month++)
     {
-        if (month == 1)
-        { // february
-            if (LEAP_YEAR(year))
-            {
-                monthLength = 29;
-            }
-            else
-            {
-                monthLength = 28;
-            }
-        }
-        else
-        {
-            monthLength = monthDays[month];
-        }
+        monthLength = getMonthLength(month + 1, year); // from 0
 
         if (time >= monthLength)
         {
@@ -151,6 +138,25 @@ bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer)
     udp.write(ntpPacketBuffer, NTP_PACKET_SIZE);
     udp.endPacket();
     return true;
+}
+
+uint8_t getMonthLength(const uint8_t &month, const uint8_t &year)
+{
+    if (month == 2)
+    { // february
+        if (LEAP_YEAR(year))
+        {
+            return 29;
+        }
+        else
+        {
+            return 28;
+        }
+    }
+    else
+    {
+        return monthDays[month - 1];
+    }
 }
 
 #endif
