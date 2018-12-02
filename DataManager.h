@@ -119,17 +119,30 @@ class DataManagerClass
     {
         date_time dt = getCurrentTime();
 
+        int year = dt.Year;
+        int prevMonth = dt.Month - 1;
+        if (prevMonth == 0)
+        {
+            prevMonth += 12;
+            year--;
+        }
+        const uint8_t daysCount = getMonthLength(prevMonth, year);
+
         uint32_t currentDay[TARIFFS_COUNT];
         getCurrentDayEnergy(monitorIdx, currentDay);
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
             values[t] = 0;
-            for (int d = 0; d < dt.Day; d++)
+            for (int d = 0; d < daysCount; d++)
             {
-                if (d != dt.Day - 1)
-                    values[t] += settings.days[d][t][monitorIdx];
-                else
-                    values[t] += currentDay[t];
+                if ((dt.Day >= settings.billDay && d + 1 >= settings.billDay && d + 1 <= dt.Day) ||
+                    (dt.Day < settings.billDay && (d + 1 >= settings.billDay || d + 1 <= dt.Day)))
+                {
+                    if (d != dt.Day - 1)
+                        values[t] += settings.days[d][t][monitorIdx];
+                    else
+                        values[t] += currentDay[t];
+                }
             }
         }
     }

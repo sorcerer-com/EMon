@@ -2,6 +2,8 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
+#include <ArduinoOTA.h>
+#include <FS.h>
 
 #include "Settings.h"
 #include "DataManager.h"
@@ -16,10 +18,19 @@ String toString(const uint32_t &value);
 void handleRoot()
 {
   digitalWrite(2, LOW);
+  
+  FSInfo fs_info;
+  SPIFFS.info(fs_info);
+
   date_time dt = DataManager.getCurrentTime();
   uint32_t values[TARIFFS_COUNT];
 
-  String message = "Energy Monitor (" + WiFi.SSID() + ") 4\n";
+  int month = dt.Month;
+  if (dt.Day < DataManager.settings.billDay) month--;
+  if (month < 1) month += 12;
+
+  String message = "Energy Monitor (" + WiFi.SSID() + ") 4 ";
+  message += String(fs_info.totalBytes) + "/" + String(fs_info.usedBytes) + "\n";
   message += "<br/>";
   message += String(dt.Hour) + ":" + String(dt.Minute) + ":" + String(dt.Second) + " " +
              String(dt.Day) + "/" + String(dt.Month) + "/" + String(dt.Year) + "\n";
@@ -127,7 +138,7 @@ void handleRoot()
       for (int i = 0; i < 12; i++)
       {
         message += "<td>";
-        if (i != dt.Month - 1)
+        if (i != month - 1)
           message += toString(DataManager.settings.months[i][t][m]) + " ";
         else
         {
@@ -168,6 +179,8 @@ void setup()
   Serial.println();
 
   DataManager.setup();
+  
+  ArduinoOTA.begin();
 
   server.on("/", handleRoot);
   server.on("/restart", []() { ESP.restart(); });
@@ -175,12 +188,15 @@ void setup()
 
   httpUpdater.setup(&server);
   server.begin();
+
+  SPIFFS.begin();
 }
 
 void loop()
 {
   DataManager.update();
 
+  ArduinoOTA.handle();
   server.handleClient();
 }
 
