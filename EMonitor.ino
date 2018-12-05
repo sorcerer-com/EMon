@@ -1,16 +1,17 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-#include <ESP8266HTTPUpdateServer.h>
+//#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoOTA.h>
 #include <FS.h>
 
 #include "Settings.h"
 #include "DataManager.h"
+#include "ESP8266HTTPUpdateServer2.h"
 
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer httpUpdater;
+ESP8266HTTPUpdateServer2 httpUpdater;
 
 // TODO: restart every day
 String toString(const uint32_t &value);
