@@ -50,6 +50,9 @@ class EnergyMonitor
     // returns consumed energy in watts per 0.01 hour
     uint32_t getEnergy(const bool &clear = true)
     {
+        if (counter == 0)
+            return 0;
+            
         uint32_t delta = millis() - timer;
         // power / ((3600 * 1000) / avgDelta)
         uint64_t energy = power * delta / counter / 3600;

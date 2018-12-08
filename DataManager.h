@@ -170,7 +170,7 @@ class DataManagerClass
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;
-        if (dt.Day == settings.billDay + 1) // the data for the first day of the new bill is full
+        if (dt.Day == settings.billDay) // the data for the month is full
         {
             for (int i = 0; i < MONITORS_COUNT; i++)
             {

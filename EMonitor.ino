@@ -7,13 +7,17 @@
 
 #include "Settings.h"
 #include "DataManager.h"
+#include "WebHandler.h"
+// TODO:
 #include "ESP8266HTTPUpdateServer2.h"
 
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer2 httpUpdater;
+WebHandler webHandler(server);
 
 // TODO: restart every day
+// TODO: wifi reconnect
 String toString(const uint32_t &value);
 
 void handleRoot()
@@ -33,6 +37,7 @@ void handleRoot()
   String message = "Energy Monitor (" + WiFi.SSID() + ") 4 ";
   message += String(fs_info.totalBytes) + "/" + String(fs_info.usedBytes) + "\n";
   message += "<br/>";
+  
   message += String(dt.Hour) + ":" + String(dt.Minute) + ":" + String(dt.Second) + " " +
              String(dt.Day) + "/" + String(dt.Month) + "/" + String(dt.Year) + "\n";
   message += " " + String(DataManager.settings.tariffHours[0]) + " " +
