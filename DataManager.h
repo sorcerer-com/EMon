@@ -155,8 +155,9 @@ class DataManagerClass
   private:
     void distributeData(const date_time &dt)
     {
-        if (dt.Hour != 1) // if not the first update for the new day
+        if (dt.Day == settings.lastDistributeDay || dt.Hour == 0) // if not the first update for the new day
             return;
+        settings.lastDistributeDay = dt.Day;
 
         // TODO: test it:
         int year = dt.Year;

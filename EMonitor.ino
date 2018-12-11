@@ -34,12 +34,13 @@ void handleRoot()
   if (dt.Day < DataManager.settings.billDay) month--;
   if (month < 1) month += 12;
 
-  String message = "Energy Monitor (" + WiFi.SSID() + ") 4 ";
+  String message = "Energy Monitor (" + WiFi.SSID() + ") 5 ";
   message += String(fs_info.totalBytes) + "/" + String(fs_info.usedBytes) + "\n";
   message += "<br/>";
   
   message += String(dt.Hour) + ":" + String(dt.Minute) + ":" + String(dt.Second) + " " +
              String(dt.Day) + "/" + String(dt.Month) + "/" + String(dt.Year) + "\n";
+  message += " " + String(DataManager.settings.lastDistributeDay) + "\n";
   message += " " + String(DataManager.settings.tariffHours[0]) + " " +
              String(DataManager.settings.tariffHours[1]) + " " +
              String(DataManager.settings.tariffHours[2]) + "\n";

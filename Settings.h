@@ -27,6 +27,7 @@ struct Settings
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
+    uint8_t lastDistributeDay = 1;
 
     int8_t timeZone = 0;
     uint8_t tariffHours[TARIFFS_COUNT] = {0, 0, 0};
