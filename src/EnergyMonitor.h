@@ -11,7 +11,7 @@ class EnergyMonitor
 
     const uint8_t voltage = 230; // V
     const uint16_t samplesCount = 1480;
-    const uint8_t batchesCount = 40;
+    const uint8_t batchesCount = 74;
     uint8_t batchIdx = 0;
     double irms = 0.0;
 
@@ -52,7 +52,7 @@ class EnergyMonitor
     {
         if (counter == 0)
             return 0;
-            
+
         uint32_t delta = millis() - timer;
         // power / ((3600 * 1000) / avgDelta)
         uint64_t energy = power * delta / counter / 3600;
@@ -71,10 +71,10 @@ class EnergyMonitor
 
   private:
     int16_t sampleI;
-    double offsetI;
+    double offsetI = 2 << 13; // half signed 16bit
     double filteredI;
     double sqI, sumI;
-    double Irms;
+    double temp_irms;
 
     // https://github.com/openenergymonitor/EmonLib
     double calcIrms(uint16_t samplesCount)
@@ -98,12 +98,12 @@ class EnergyMonitor
             sumI += sqI;
         }
 
-        double irms = sqrt(sumI / samplesCount) * multiplier / 26;
+        temp_irms = sqrt(sumI / samplesCount) * multiplier / 26;
 
         //Reset accumulators
         sumI = 0;
 
-        return irms;
+        return temp_irms;
     }
 };
 
