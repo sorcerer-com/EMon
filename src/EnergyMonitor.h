@@ -9,7 +9,6 @@ class EnergyMonitor
     ADS1115 &ads;
     uint8_t channel = 0;
 
-    const uint8_t voltage = 230; // V
     const uint16_t samplesCount = 1480;
     const uint8_t batchesCount = 74;
     uint8_t batchIdx = 0;
@@ -20,6 +19,7 @@ class EnergyMonitor
     uint64_t power = 0;
 
   public:
+    const uint8_t voltage = 230; // V
     double current = 0.0;
 
     EnergyMonitor(ADS1115 &_ads, uint8_t _channel) : ads(_ads)

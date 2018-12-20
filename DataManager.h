@@ -87,6 +87,12 @@ class DataManagerClass
         return getMonitor(monitorIdx).current;
     }
 
+    inline double getEnergy(const int &monitorIdx)
+    {
+        EnergyMonitor &monitor = getMonitor(monitorIdx);
+        return monitor.current * monitor.voltage;
+    }
+
     inline double getCurrentHourEnergy(const int &monitorIdx)
     {
         return getMonitor(monitorIdx).getEnergy(false);
@@ -159,7 +165,6 @@ class DataManagerClass
             return;
         settings.lastDistributeDay = dt.Day;
 
-        // TODO: test it:
         int year = dt.Year;
         int prevMonth = dt.Month - 1;
         if (prevMonth == 0)

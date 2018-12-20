@@ -27,7 +27,12 @@ class WebHandler
 
     void handleDataFile()
     {
+        // TODO: maybe split in multiple files
         String result = "var data = {};\n";
+        result += "data.monitorsCount = " + String(MONITORS_COUNT) + ";\n";
+        result += "data.tariffsCount = " + String(TARIFFS_COUNT) + ";\n";
+        result += "\n";
+
         result += "data.settings = {};\n";
         result += "data.settings['Time Zone'] = " + String(DataManager.settings.timeZone) + ";\n";
         result += "data.settings['Tariff Hours'] = [];\n";
@@ -37,6 +42,37 @@ class WebHandler
             result += String(DataManager.settings.tariffHours[t]) + ";\n";
         }
         result += "data.settings['Bill Day'] = " + String(DataManager.settings.billDay) + ";\n";
+        result += "\n";
+
+        result += "data.current = {};\n";
+        result += "data.current.energy = [];\n";
+        result += "data.current.hour = [];\n";
+        result += "data.current.day = [];\n";
+        result += "data.current.month = [];\n";
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += "data.current.energy[" + String(m) + "] = ";
+            result += String(DataManager.getEnergy(m)) + ";\n";
+            result += "data.current.hour[" + String(m) + "] = ";
+            result += String(DataManager.getCurrentHourEnergy(m)) + ";\n";
+            
+            uint32_t values[TARIFFS_COUNT];
+            result += "data.current.day[" + String(m) + "] = [];\n";
+            DataManager.getCurrentDayEnergy(m, values);
+            for (int t = 0; t < TARIFFS_COUNT; t++)
+            {
+                result += "data.current.day[" + String(m) + "][" + String(t) + "] = ";
+                result += String(values[t]) + ";\n";
+            }
+            
+            result += "data.current.month[" + String(m) + "] = [];\n";
+            DataManager.getCurrentMonthEnergy(m, values);
+            for (int t = 0; t < TARIFFS_COUNT; t++)
+            {
+                result += "data.current.month[" + String(m) + "][" + String(t) + "] = ";
+                result += String(values[t]) + ";\n";
+            }
+        }
         result += "\n";
 
         result += "data.hours = [];\n";
