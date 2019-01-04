@@ -17,13 +17,13 @@ ESP8266HTTPUpdateServer2 httpUpdater;
 WebHandler webHandler(server);
 
 // TODO: restart every day
-// TODO: wifi reconnect
+// TODO: wifi manager - https://github.com/tzapu/WiFiManager
 String toString(const uint32_t &value);
 
-void handleRoot()
+void handleRaw()
 {
   digitalWrite(2, LOW);
-  
+
   FSInfo fs_info;
   SPIFFS.info(fs_info);
 
@@ -31,21 +31,26 @@ void handleRoot()
   uint32_t values[TARIFFS_COUNT];
 
   int month = dt.Month;
-  if (dt.Day < DataManager.settings.billDay) month--;
-  if (month < 1) month += 12;
+  if (dt.Day < DataManager.settings.billDay)
+    month--;
+  if (month < 1)
+    month += 12;
 
-  String message = "Energy Monitor (" + WiFi.SSID() + ") 5 ";
-  message += String(fs_info.totalBytes) + "/" + String(fs_info.usedBytes) + "\n";
+  String message = "Energy Monitor (" + WiFi.SSID() + ", " + WiFi.localIP().toString() + ", " + String(WiFi.RSSI()) + ") 6";
   message += "<br/>";
-  
+
   message += String(dt.Hour) + ":" + String(dt.Minute) + ":" + String(dt.Second) + " " +
              String(dt.Day) + "/" + String(dt.Month) + "/" + String(dt.Year) + "\n";
-  message += " " + String(DataManager.settings.lastDistributeDay) + "\n";
-  message += " " + String(DataManager.settings.tariffHours[0]) + " " +
-             String(DataManager.settings.tariffHours[1]) + " " +
-             String(DataManager.settings.tariffHours[2]) + "\n";
-  message += " " + String(DataManager.settings.billDay) + "\n";
+  message += String(millis()) + "\n";
   message += "<br/>";
+  message += String(DataManager.settings.lastDistributeDay) + "\n ";
+  message += String(DataManager.settings.tariffStartHours[0]) + " " +
+             String(DataManager.settings.tariffStartHours[1]) + " " +
+             String(DataManager.settings.tariffStartHours[2]) + "\n ";
+  message += String(DataManager.settings.billDay) + "\n ";
+  message += String(sizeof(DataManager.settings)) + "\n ";
+  message += String(fs_info.totalBytes) + "/" + String(fs_info.usedBytes) + "\n ";
+  message += "<br/><br/>";
   for (int m = 0; m < MONITORS_COUNT; m++)
   {
     double current = DataManager.getCurrent(m);
@@ -182,14 +187,14 @@ void setup()
   }
   Serial.print(WiFi.SSID());
   Serial.print(" ");
-  Serial.println(WiFi.localIP());
+  Serial.println(WiFi.localIP().toString());
   Serial.println();
 
   DataManager.setup();
-  
+
   ArduinoOTA.begin();
 
-  server.on("/", handleRoot);
+  server.on("/raw", handleRaw);
   server.on("/restart", []() { ESP.restart(); });
   server.on("/save", []() { writeEEPROM(DataManager.settings); });
 
@@ -205,6 +210,15 @@ void loop()
 
   ArduinoOTA.handle();
   server.handleClient();
+
+  if (wifiMulti.run() != WL_CONNECTED)
+  {
+    Serial.println("Re-connecting...");
+    Serial.print(WiFi.SSID());
+    Serial.print(" ");
+    Serial.println(WiFi.localIP().toString());
+    Serial.println();
+  }
 }
 
 String toString(const uint32_t &value)

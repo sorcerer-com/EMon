@@ -93,7 +93,7 @@ class DataManagerClass
         return monitor.current * monitor.voltage;
     }
 
-    inline double getCurrentHourEnergy(const int &monitorIdx)
+    inline uint32_t getCurrentHourEnergy(const int &monitorIdx)
     {
         return getMonitor(monitorIdx).getEnergy(false);
     }
@@ -112,11 +112,11 @@ class DataManagerClass
             else
                 value = getCurrentHourEnergy(monitorIdx);
 
-            if (h >= settings.tariffHours[0] && h < settings.tariffHours[1])
+            if (h >= settings.tariffStartHours[0] && h < settings.tariffStartHours[1])
                 values[0] += value;
-            else if (h >= settings.tariffHours[1] && h < settings.tariffHours[2])
+            else if (h >= settings.tariffStartHours[1] && h < settings.tariffStartHours[2])
                 values[1] += value;
-            else if (h >= settings.tariffHours[2] || h < settings.tariffHours[0])
+            else if (h >= settings.tariffStartHours[2] || h < settings.tariffStartHours[0])
                 values[2] += value;
         }
     }
@@ -200,11 +200,11 @@ class DataManagerClass
             uint32_t sum[3] = {0, 0, 0};
             for (int h = 0; h < 24; h++)
             {
-                if (h >= settings.tariffHours[0] && h < settings.tariffHours[1])
+                if (h >= settings.tariffStartHours[0] && h < settings.tariffStartHours[1])
                     sum[0] += settings.hours[h][i];
-                else if (h >= settings.tariffHours[1] && h < settings.tariffHours[2])
+                else if (h >= settings.tariffStartHours[1] && h < settings.tariffStartHours[2])
                     sum[1] += settings.hours[h][i];
-                else if (h >= settings.tariffHours[2] || h < settings.tariffHours[0])
+                else if (h >= settings.tariffStartHours[2] || h < settings.tariffStartHours[0])
                     sum[2] += settings.hours[h][i];
             }
             settings.days[prevDay - 1][0][i] = sum[0];

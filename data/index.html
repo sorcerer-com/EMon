@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>Electicity Home System</title>
+
+	<script>
+		var windowWidth = window.screen.width < window.outerWidth ?
+			window.screen.width : window.outerWidth;
+
+		if (windowWidth < 700) {
+			// mobile
+			window.location.replace("m/consumption.html");
+		}
+		else {
+			// desktop
+			window.location.replace("d/consumption.html");
+		}
+	</script>
+</head>
+
+<body></body>
+
+</html>

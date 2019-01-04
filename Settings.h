@@ -13,6 +13,8 @@
 #define DEBUGLOG(category, ...)
 #endif
 
+#define SF(str) String(F(str))
+
 #define MILLIS_IN_A_SECOND 1000
 #define SECONDS_IN_A_MINUTE 60
 #define SECONDS_IN_AN_HOUR 3600
@@ -20,6 +22,7 @@
 
 #define MONITORS_COUNT 4
 #define TARIFFS_COUNT 3
+#define MONITOR_NAME_LENGTH 50
 
 struct Settings
 {
@@ -30,19 +33,12 @@ struct Settings
     uint8_t lastDistributeDay = 1;
 
     int8_t timeZone = 0;
-    uint8_t tariffHours[TARIFFS_COUNT] = {0, 0, 0};
+    uint8_t tariffStartHours[TARIFFS_COUNT] = {0, 0, 0};
     uint8_t billDay = 1;
+    double tariffPrices[TARIFFS_COUNT] = {0.0, 0.0, 0.0};
+    char currencySymbols[5];
+    char monitorsNames[MONITORS_COUNT][MONITOR_NAME_LENGTH];
     // add new values in the end
-
-    // TODO: remove / init by setup page
-    Settings()
-    {
-        timeZone = 2;
-        tariffHours[0] = 7;
-        tariffHours[1] = 23;
-        tariffHours[2] = 23;
-        billDay = 6;
-    }
 };
 
 void readEEPROM(Settings &settings)
@@ -51,6 +47,22 @@ void readEEPROM(Settings &settings)
         return;
 
     EEPROM.get(0, settings);
+
+    // TODO: remove
+    settings.lastDistributeDay = 11;
+    settings.timeZone = 2;
+    settings.tariffStartHours[0] = 7;
+    settings.tariffStartHours[1] = 23;
+    settings.tariffStartHours[2] = 23;
+    settings.tariffPrices[0] = 0.17732;
+    settings.tariffPrices[1] = 0.10223;
+    settings.tariffPrices[2] = 0.10223;
+    settings.billDay = 6;
+    strcpy(settings.currencySymbols, String("lv.").c_str());
+    strcpy(settings.monitorsNames[0], String("Lampi, Kuhnia, Kotle").c_str());
+    strcpy(settings.monitorsNames[1], String("Furna, Hol, Kotle").c_str());
+    strcpy(settings.monitorsNames[2], String("Boiler, Spalnia, Detska, Kotle").c_str());
+    strcpy(settings.monitorsNames[3], "");
 }
 
 void writeEEPROM(const Settings &settings)
