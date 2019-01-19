@@ -11,9 +11,16 @@ $(function () {
 		}
 	}
 
+	if ($(".swiper-container").length > 0) {
+		// mobile
+		InitializeSwiper();
+	}
+
 	// add monitors hints
 	for (var m = 0; m < data.monitorsCount; m++) {
-		$(`.monitor-${m + 1}`).prop("title", data.settings['Monitors Names'][m]);
+		if (data.settings['Monitors Names'][m] != "") {
+			$(`.monitor-${m + 1}`).prop("title", data.settings['Monitors Names'][m]);
+		}
 	}
 
 	// Consumption
@@ -177,6 +184,7 @@ $(function () {
 	$(`.cr-last-month-current`)
 		.append(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
 
+
 	// Current
 	//// Current Usage
 	var total = 0;
@@ -266,7 +274,6 @@ $(function () {
 	}
 
 
-
 	// History
 	//// Year
 	var total = 0;
@@ -303,6 +310,25 @@ $(function () {
 	}
 });
 
+function InitializeSwiper() {
+	// Initialize Swiper
+	var swiper = new Swiper('.swiper-container', {
+		slidesPerView: 1,
+		spaceBetween: 30,
+		keyboard: {
+			enabled: true,
+		},
+		pagination: {
+			el: '.swiper-pagination',
+			clickable: true,
+		},
+		navigation: {
+			nextEl: '.swiper-button-next',
+			prevEl: '.swiper-button-prev',
+		},
+	});
+}
+
 // Current
 function drawTotalConsumption(canvasName) {
 	// sum by tariffs
@@ -318,7 +344,6 @@ function drawTotalConsumption(canvasName) {
 		canvasName,
 		values,
 		{
-			sectionsWidth: 25,
 			label: "Total",
 			units: "kWh",
 			colors: ["#ec96a4", "#63b59c", "#68829e"]

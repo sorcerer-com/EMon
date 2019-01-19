@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link rel="icon" href="../favicon.ico" type="image/x-icon">
+
+	<title>Power Tracker</title>
+
+	<!-- JQuery -->
+	<script src="../res/jquery-3.3.1.min.js"></script>
+
+	<!-- Bootstrap -->
+	<link rel="stylesheet" href="../res/bootstrap.min.css">
+	<script src="../res/bootstrap.min.js"></script>
+
+	<!-- CSS -->
+	<link rel="stylesheet" type="text/css" href="style.css" />
+
+	<!-- Javascript -->
+	<script src="../res/curve.min.js"></script>
+	<script src="../res/charts.js"></script>
+
+	<script src="../data.js"></script>
+	<script src="../res/javascript.js"></script>
+
+	<!-- Swiper -->
+	<link rel="stylesheet" href="../res/swiper.min.css">
+	<script src="../res/swiper.min.js"></script>
+</head>
+
+<body>
+	<header>
+		<div class="glyphicon glyphicon-flash pull-left"></div>
+		Power Tracker
+		<a href="../d/consumption.html">
+			<div class="glyphicon glyphicon-sound-stereo pull-right"></div>
+		</a>
+	</header>
+
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			<section class="section-total swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Total Consumption</p>
+					<canvas width="250px" height="250px" id="chart-total-consumption"></canvas>
+					<script type="text/javascript">drawTotalConsumption("chart-total-consumption");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-total-price"></p>
+						<p class="cr-total-value"></p>
+						<p class="cr-total-prevMonth-price">Previous month: </p>
+						<p class="cr-total-prevMonth-value" title="total, divided by tariffs"></p>
+						<hr>
+						<p class="cr-total tariff-1">Tariff 1 Consumption: </p>
+						<p class="cr-total tariff-2">Tariff 2 Consumption: </p>
+						<p class="cr-total tariff-3">Tariff 3 Consumption: </p>
+						<hr>
+						<p class="cr-total monitor-1">Monitor 1 Consumption: </p>
+						<p class="cr-total monitor-2">Monitor 2 Consumption: </p>
+						<p class="cr-total monitor-3">Monitor 3 Consumption: </p>
+						<p class="cr-total monitor-4">Monitor 4 Consumption: </p>
+					</span>
+				</div>
+			</section>
+			<section class="section-last-24-hours swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Last 24 Hours</p>
+					<canvas width="290px" height="150px" id="chart-last-24-hours"></canvas>
+					<script type="text/javascript">drawLast24Hours("chart-last-24-hours");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-last-24-hours tariff-1">Tariff 1 Consumption: </p>
+						<p class="cr-last-24-hours tariff-2">Tariff 2 Consumption: </p>
+						<p class="cr-last-24-hours tariff-3">Tariff 3 Consumption: </p>
+						<hr>
+						<p class="cr-last-24-hours monitor-1">Monitor 1 Consumption: </p>
+						<p class="cr-last-24-hours monitor-2">Monitor 2 Consumption: </p>
+						<p class="cr-last-24-hours monitor-3">Monitor 3 Consumption: </p>
+						<p class="cr-last-24-hours monitor-4">Monitor 4 Consumption: </p>
+						<hr>
+						<p class="cr-last-24-hours-total">Total: </p>
+						<p class="cr-last-24-hours-average" title="value (divided by monitors)">Hourly Average: </p>
+						<hr>
+						<p class="cr-last-24-hours-current" title="value (divided by monitors)">Current Hour: </p>
+					</span>
+				</div>
+			</section>
+			<section class="section-last-month swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Last Month</p>
+					<canvas width="290px" height="150px" id="chart-last-month"></canvas>
+					<script type="text/javascript">drawLastMonth("chart-last-month");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-last-month tariff-1">Tariff 1 Consumption: </p>
+						<p class="cr-last-month tariff-2">Tariff 2 Consumption: </p>
+						<p class="cr-last-month tariff-3">Tariff 3 Consumption: </p>
+						<hr>
+						<p class="cr-last-month monitor-1">Monitor 1 Consumption: </p>
+						<p class="cr-last-month monitor-2">Monitor 2 Consumption: </p>
+						<p class="cr-last-month monitor-3">Monitor 3 Consumption: </p>
+						<p class="cr-last-month monitor-4">Monitor 4 Consumption: </p>
+						<hr>
+						<p class="cr-last-month-total">Total: </p>
+						<p class="cr-last-month-average" title="value (divided by tariffs)">Daily Average: </p>
+						<hr>
+						<p class="cr-last-month-current" title="value (divided by tariffs)">Current Day: </p>
+					</span>
+				</div>
+			</section>
+		</div>
+
+		<!-- Add Pagination -->
+		<div class="swiper-pagination"></div>
+		<!-- Add Arrows -->
+		<div class="swiper-button-next"></div>
+		<div class="swiper-button-prev"></div>
+	</div>
+
+	<footer>
+		<ul class="row">
+			<li class="col-xs-3">
+				<div class="glyphicon glyphicon-menu-hamburger"></div>
+				<p>Settings</p>
+			</li>
+			<li class="col-xs-2" id="active">
+				<a href="consumption.html">
+					<div class="glyphicon glyphicon-home"></div>
+					<p>Consumption</p>
+				</a>
+			</li>
+			<li class="col-xs-2">
+				<a href="current.html">
+					<div class="glyphicon glyphicon-eye-open"></div>
+					<p>Current</p>
+				</a>
+			</li>
+			<li class="col-xs-2">
+				<a href="history.html">
+					<div class="glyphicon glyphicon-stats"></div>
+					<p>History</p>
+				</a>
+			</li>
+			<li class="col-xs-3">
+				<a onclick="document.location.reload(true)" style="cursor: pointer">
+					<div class="glyphicon glyphicon-refresh"></div>
+					<p>Refresh</p>
+				</a>
+			</li>
+		</ul>
+	</footer>
+
+</body>
+
+</html>

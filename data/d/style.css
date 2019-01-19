@@ -95,11 +95,6 @@ footer {
 	color: #ffffff;
 }
 
-object {
-	width: 100%;
-}
-
-
 footer .glyphicon {
 	-webkit-text-stroke: 1px #1995ad;
 	font-size: 20px;
@@ -149,6 +144,9 @@ footer .col-xs-2 a, footer .col-xs-3 a {
 	vertical-align: top;
 	width: 32%;
 }
+.chart-numbers{		
+	text-align: left;		
+}
 
 #scroller-left {
 	cursor: pointer;
@@ -169,21 +167,7 @@ footer .col-xs-2 a, footer .col-xs-3 a {
 	right: 15px;
 }
 
-/* .section2, .section3{ */
-	/* display: none; */
-/* } */
-
 /* Charts */
-
-#circles-total {
-	position: absolute;
-	top: 50px;
-    left: 50px;
-	text-align: center;
-	line-height: 12px;
-	font-size: 12px;
-}
-
 #active {
 	border-bottom: 4px solid #25768c;
 }
@@ -248,55 +232,4 @@ footer .col-xs-2 a, footer .col-xs-3 a {
 
 .monitor-4.section {
 	color: #b38867;
-}
-/* *** */
-
-.chart-numbers{
-	text-align: left;
-}
-
-.circles-numbers{
-	display: table-cell;
-	vertical-align: middle;
-	text-align: left
-}
-
-.ch-day{
-	color: #ec96a4;
-}
-.ch-night{
-	color: #9A9eab;
-}
-.ch-month-day{
-	color: #e37f82;
-}
-.ch-month-night{
-	color: #5282fc;
-}
-
-
-
-/* Swiper */
-.swiper-container {
-      width: 100%;
-      height: 100%;
-      margin-left: auto;
-      margin-right: auto;
-    }
-.swiper-slide {
-  text-align: center;
-  background: #fff;
-  /* Center slide text vertically */
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-box-pack: center;
-  -ms-flex-pack: center;
-  -webkit-justify-content: center;
-  justify-content: center;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  -webkit-align-items: center;
-  align-items: center;
 }

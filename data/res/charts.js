@@ -78,11 +78,12 @@ function drawBarChart(canvasName, labels, values, options) {
 
 
 	// bars
+	var textBetween = Math.ceil(ctx.measureText("00").width / barWidth);
 	for (var i = 0; i < barsCount; i++) {
 		ctx.fillStyle = options.colors[i % options.colors.length];
 		ctx.fillRect(i * (barWidth + 1) + 22, canvas.height - textHeight, barWidth, -Math.floor(values[i] * coef) - 1);
 
-		if (barWidth > ctx.measureText("00").width) {
+		if (i % textBetween == 0) {
 			ctx.fillStyle = options.textColor;
 			ctx.font = "italic bold " + options.font;
 			var textX = i * (barWidth + 1) + 22 + barWidth / 2 - ctx.measureText(labels[i]).width / 2;
@@ -318,9 +319,8 @@ function drawVerticalSplitBarChart(canvasName, labels, values, options) {
 			ctx.fillRect(startX, (barHeight * i), values[j][i] * coef + 1, barHeight - blankSpaceHeight);
 			startX += values[j][i] * coef;
 
-			var textWidth = ctx.measureText(values[j][i].toFixed(2)).width;
 			ctx.fillStyle = options.text2Color;
-			ctx.fillText(values[j][i].toFixed(2), startX - values[j][i] * coef + 5, barHeight * i + barHeight / 2);
+			ctx.fillText(values[j][i].toFixed(2), startX - values[j][i] * coef + 5, barHeight * i + barHeight / 2 + 2);
 		}
 
 		// ratio
@@ -387,7 +387,7 @@ function drawDonutChart(canvasName, sections, options) {
 
 	// default values
 	options = options || {}
-	options.sectionsWidth = options.sectionsWidth || 20;
+	options.sectionsWidth = options.sectionsWidth || 0;
 	options.sectionsRadius = options.sectionsRadius || 0;
 	options.colors = options.colors || ["#626d71", "#cdcdc0", "#ddbc95", "#b38867"];
 	options.textColor = options.textColor || "#828282";
@@ -409,6 +409,9 @@ function drawDonutChart(canvasName, sections, options) {
 	var centerX = canvas.width / 2;
 	var centerY = canvas.height / 2;
 
+	if (options.sectionsWidth == 0) {
+		options.sectionsWidth = canvas.width / 12;
+	}
 	if (options.sectionsRadius == 0) {
 		options.sectionsRadius = canvas.width / 2.5;
 	}
