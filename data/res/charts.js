@@ -139,7 +139,6 @@ function drawBarChart(canvasName, labels, values, options) {
 			}
 		};
 	}
-	// TODO: non interactive with X labels?
 }
 
 function drawLineChart(canvasName, labels, values, options) {
@@ -268,7 +267,6 @@ function drawLineChart(canvasName, labels, values, options) {
 			}
 		};
 	}
-	// TODO: non interactive with X labels?
 }
 
 function drawVerticalSplitBarChart(canvasName, labels, values, options) {

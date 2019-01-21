@@ -1,0 +1,7 @@
+https://code.jquery.com/jquery-3.3.1.min.js
+
+https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css
+https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js
+
+https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.5/css/swiper.min.css
+https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.5/js/swiper.min.js

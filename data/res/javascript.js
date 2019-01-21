@@ -1,4 +1,27 @@
-$(function () {
+// if data is in sessionStorage already and not refreshing
+if (sessionStorage.data && performance.navigation.type != 1) {
+	data = JSON.parse(sessionStorage.data);
+}
+else {
+	sessionStorage.removeItem("data");
+	var script = document.createElement("script");
+	script.async = false;
+	script.type = "text/javascript";
+	script.src = "../data.js";
+	script.onload = function () {
+		sessionStorage.data = JSON.stringify(data);
+	};
+	document.head.insertBefore(script, document.head.firstChild);
+}
+
+$("header").ready(function () {
+	if (!sessionStorage.data)
+		$("header").append("(loading...)");
+});
+
+$(window).on("load", function () {
+	$("header").html($("header").html().replace("(loading...)", ""))
+	
 	// data isn't loaded
 	try {
 		if (data == undefined) {
@@ -331,177 +354,191 @@ function InitializeSwiper() {
 
 // Current
 function drawTotalConsumption(canvasName) {
-	// sum by tariffs
-	var values = [];
-	for (var t = 0; t < data.tariffsCount; t++) {
-		values.push(0);
-		for (var m = 0; m < data.monitorsCount; m++) {
-			values[t] += toKilo(data.current.month[m][t]);
+	$(window).on("load", function () {
+		// sum by tariffs
+		var values = [];
+		for (var t = 0; t < data.tariffsCount; t++) {
+			values.push(0);
+			for (var m = 0; m < data.monitorsCount; m++) {
+				values[t] += toKilo(data.current.month[m][t]);
+			}
 		}
-	}
 
-	drawDonutChart(
-		canvasName,
-		values,
-		{
-			label: "Total",
-			units: "kWh",
-			colors: ["#ec96a4", "#63b59c", "#68829e"]
-		});
+		drawDonutChart(
+			canvasName,
+			values,
+			{
+				label: "Total",
+				units: "kWh",
+				colors: ["#ec96a4", "#63b59c", "#68829e"]
+			});
+	});
 }
 
 function drawCurrentUsage(canvasName) {
-	var maxValue = Math.max.apply(Math, data.current.energy);
-	drawCircularChart(
-		canvasName,
-		data.current.energy,
-		maxValue * 1.2,
-		{
-			radius: 75,
-			label: "Total",
-			units: "W"
-		});
+	$(window).on("load", function () {
+		var maxValue = Math.max.apply(Math, data.current.energy);
+		drawCircularChart(
+			canvasName,
+			data.current.energy,
+			maxValue * 1.2,
+			{
+				radius: 75,
+				label: "Total",
+				units: "W"
+			});
+	});
 }
 
 function drawLast24Hours(canvasName) {
-	var labels = [];
-	var values = [];
-	var colors = [];
-	var dt = new Date(data.time);
-	for (var h = 0; h < 24; h++) {
-		var hour = (dt.getUTCHours() + h) % 24;
-		labels.push(hour);
-		values.push(0);
-		for (var m = 0; m < data.monitorsCount; m++) {
-			values[h] += toKilo(data.hours[m][hour]);
+	$(window).on("load", function () {
+		var labels = [];
+		var values = [];
+		var colors = [];
+		var dt = new Date(data.time);
+		for (var h = 0; h < 24; h++) {
+			var hour = (dt.getUTCHours() + h) % 24;
+			labels.push(hour);
+			values.push(0);
+			for (var m = 0; m < data.monitorsCount; m++) {
+				values[h] += toKilo(data.hours[m][hour]);
+			}
+
+			if (hour >= data.settings['Tariff Start Hours'][0] && hour < data.settings['Tariff Start Hours'][1])
+				colors.push("#ec96a4");
+			else if (hour >= data.settings['Tariff Start Hours'][1] && hour < data.settings['Tariff Start Hours'][2])
+				colors.push("#63b59c");
+			else if (hour >= data.settings['Tariff Start Hours'][2] || hour < data.settings['Tariff Start Hours'][0])
+				colors.push("#68829e");
 		}
 
-		if (hour >= data.settings['Tariff Start Hours'][0] && hour < data.settings['Tariff Start Hours'][1])
-			colors.push("#ec96a4");
-		else if (hour >= data.settings['Tariff Start Hours'][1] && hour < data.settings['Tariff Start Hours'][2])
-			colors.push("#63b59c");
-		else if (hour >= data.settings['Tariff Start Hours'][2] || hour < data.settings['Tariff Start Hours'][0])
-			colors.push("#68829e");
-	}
-
-	drawBarChart(
-		canvasName,
-		labels,
-		values,
-		{ colors: colors });
+		drawBarChart(
+			canvasName,
+			labels,
+			values,
+			{ colors: colors });
+	});
 }
 
 function drawLastMonth(canvasName, monitorIdx) {
-	var labels = [];
-	var dt = new Date(data.time);
-	var daysCount = new Date(dt.getUTCFullYear(), dt.getUTCMonth(), 0).getDate(); // get previous month length
-	for (var d = 0; d < daysCount; d++) {
-		var dt2 = new Date(dt);
-		dt2.setDate(dt.getDate() - daysCount + d);
-		labels.push(dt2.getUTCDate());
-	}
-
-	var values = [];
-	for (var t = 0; t < data.tariffsCount; t++) {
-		values.push([]);
+	$(window).on("load", function () {
+		var labels = [];
+		var dt = new Date(data.time);
+		var daysCount = new Date(dt.getUTCFullYear(), dt.getUTCMonth(), 0).getDate(); // get previous month length
 		for (var d = 0; d < daysCount; d++) {
 			var dt2 = new Date(dt);
 			dt2.setDate(dt.getDate() - daysCount + d);
+			labels.push(dt2.getUTCDate());
+		}
 
-			values[t].push(0);
-			if (monitorIdx != undefined) {
-				values[t][d] = toKilo(data.days[monitorIdx][t][dt2.getUTCDate() - 1]);
-			}
-			else {
-				for (var m = 0; m < data.monitorsCount; m++) {
-					values[t][d] += toKilo(data.days[m][t][dt2.getUTCDate() - 1]);
+		var values = [];
+		for (var t = 0; t < data.tariffsCount; t++) {
+			values.push([]);
+			for (var d = 0; d < daysCount; d++) {
+				var dt2 = new Date(dt);
+				dt2.setDate(dt.getDate() - daysCount + d);
+
+				values[t].push(0);
+				if (monitorIdx != undefined) {
+					values[t][d] = toKilo(data.days[monitorIdx][t][dt2.getUTCDate() - 1]);
+				}
+				else {
+					for (var m = 0; m < data.monitorsCount; m++) {
+						values[t][d] += toKilo(data.days[m][t][dt2.getUTCDate() - 1]);
+					}
 				}
 			}
 		}
-	}
-	values.reverse();
+		values.reverse();
 
-	drawLineChart(
-		canvasName,
-		labels,
-		values);
+		drawLineChart(
+			canvasName,
+			labels,
+			values);
+	});
 }
 
 // Sections
 function drawCurrentHour(canvasName) {
-	var values = [];
-	for (var m = 0; m < data.monitorsCount; m++) {
-		values.push(toKilo(data.current.hour[m]));
-	}
+	$(window).on("load", function () {
+		var values = [];
+		for (var m = 0; m < data.monitorsCount; m++) {
+			values.push(toKilo(data.current.hour[m]));
+		}
 
-	drawDonutChart(
-		canvasName,
-		values,
-		{
-			label: "Total",
-			units: "kWh"
-		});
+		drawDonutChart(
+			canvasName,
+			values,
+			{
+				label: "Total",
+				units: "kWh"
+			});
+	});
 }
 
 function drawCurrentDay(canvasName) {
-	var labels = [];
-	var values = [];
-	for (var m = 0; m < data.monitorsCount; m++) {
-		labels.push("Monitor " + m);
-		values.push([]);
-		for (var t = 0; t < data.tariffsCount; t++) {
-			values[m].push(toKilo(data.current.day[m][t]));
+	$(window).on("load", function () {
+		var labels = [];
+		var values = [];
+		for (var m = 0; m < data.monitorsCount; m++) {
+			labels.push("Monitor " + m);
+			values.push([]);
+			for (var t = 0; t < data.tariffsCount; t++) {
+				values[m].push(toKilo(data.current.day[m][t]));
+			}
 		}
-	}
 
-	drawVerticalMultiBarsChart(
-		canvasName,
-		labels,
-		values,
-		{ units: "kWh" });
+		drawVerticalMultiBarsChart(
+			canvasName,
+			labels,
+			values,
+			{ units: "kWh" });
+	});
 }
 
 // History
 function drawLastYear(canvasName, monitorIdx) {
-	// sum by tariffs
-	var values = [];
-	for (var t = 0; t < data.tariffsCount; t++) {
-		values.push([]);
-		for (var i = 0; i < 12; i++) {
-			values[t].push(0);
+	$(window).on("load", function () {
+		// sum by tariffs
+		var values = [];
+		for (var t = 0; t < data.tariffsCount; t++) {
+			values.push([]);
+			for (var i = 0; i < 12; i++) {
+				values[t].push(0);
 
-			if (monitorIdx != undefined) {
-				values[t][i] = toKilo(data.months[monitorIdx][t][i]);
-			}
-			else {
-				for (var m = 0; m < data.monitorsCount; m++) {
-					values[t][i] += toKilo(data.months[m][t][i]);
+				if (monitorIdx != undefined) {
+					values[t][i] = toKilo(data.months[monitorIdx][t][i]);
+				}
+				else {
+					for (var m = 0; m < data.monitorsCount; m++) {
+						values[t][i] += toKilo(data.months[m][t][i]);
+					}
 				}
 			}
 		}
-	}
-	var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Noe", "Dec"];
+		var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Noe", "Dec"];
 
-	// shift array so values to be ordered backward from last month
-	for (var m = 0; m < getBillMonth() - 1; m++) {
-		months.push(months[0]);
-		months.shift();
-		for (var t = 0; t < data.tariffsCount; t++) {
-			values[t].push(values[t][0]);
-			values[t].shift();
+		// shift array so values to be ordered backward from last month
+		for (var m = 0; m < getBillMonth() - 1; m++) {
+			months.push(months[0]);
+			months.shift();
+			for (var t = 0; t < data.tariffsCount; t++) {
+				values[t].push(values[t][0]);
+				values[t].shift();
+			}
 		}
-	}
-	months.reverse();
-	for (var t = 0; t < data.tariffsCount; t++) {
-		values[t].reverse();
-	}
+		months.reverse();
+		for (var t = 0; t < data.tariffsCount; t++) {
+			values[t].reverse();
+		}
 
-	drawVerticalSplitBarChart(
-		canvasName,
-		months,
-		values,
-		{ units: "kWh" }
-	);
+		drawVerticalSplitBarChart(
+			canvasName,
+			months,
+			values,
+			{ units: "kWh" }
+		);
+	});
 }
 
 
