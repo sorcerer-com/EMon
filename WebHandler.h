@@ -7,6 +7,7 @@
 class WebHandler
 {
   private:
+    const int ledPin = 2;
     ESP8266WebServer &server;
 
   public:
@@ -18,19 +19,23 @@ class WebHandler
   private:
     void setup()
     {
+        server.on("/data.js", [&]() { handleDataFile(); });
+        server.on("/raw", [&]() { handleRaw(); });
+        server.on("/data", [&]() { handleRawData(); });
+        server.on("/restart", [&]() { handleRestart(); });
+
         server.onNotFound([&]() {
             if (!handleFileRead(server.uri()))
             {
-                server.send(404, "text/plain", "404: Not Found");
+                server.send(404, "text/plain", F("404: Not Found"));
             }
         });
-
-        server.on("/data.js", HTTP_GET, [&]() { handleDataFile(); });
     }
 
     void handleDataFile()
     {
-        // TODO: maybe split in multiple files
+        digitalWrite(ledPin, LOW);
+
         DEBUGLOG("WebHandler", "Generating data.js");
         unsigned long timer = millis();
         String result = SF("var data = {};\n");
@@ -144,10 +149,13 @@ class WebHandler
         DEBUGLOG("WebHandler", "Generating data.js (%d) for %d", result.length(), (millis() - timer));
 
         server.send(200, "application/javascript", result);
+        digitalWrite(ledPin, HIGH);
     }
 
     bool handleFileRead(String path)
     {
+        digitalWrite(ledPin, LOW);
+
         DEBUGLOG("WebHandler", "HandleFileRead: %s", path.c_str());
         if (path.endsWith("/"))
             path += "index.html";
@@ -161,9 +169,13 @@ class WebHandler
             size_t sent = server.streamFile(file, contentType);
             file.close();
             DEBUGLOG("WebHandler", "\tSent file: %s", path.c_str());
+
+            digitalWrite(ledPin, HIGH);
             return true;
         }
         DEBUGLOG("WebHandler", "\tFile Not Found: %s", path.c_str());
+
+        digitalWrite(ledPin, HIGH);
         return false; // If the file doesn't exist, return false
     }
 
@@ -215,6 +227,209 @@ class WebHandler
             result += "0";
         result += String(dt.Second) + "Z";
         return result;
+    }
+
+    void handleRaw()
+    {
+        digitalWrite(ledPin, LOW);
+
+        FSInfo fs_info;
+        SPIFFS.info(fs_info);
+
+        date_time dt = DataManager.getCurrentTime();
+        uint32_t values[TARIFFS_COUNT];
+
+        int month = dt.Month;
+        if (dt.Day < DataManager.settings.billDay)
+            month--;
+        if (month < 1)
+            month += 12;
+
+        String result = SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI());
+        result += SF("<br/>\n");
+
+        result += String(dt.Hour) + SF(":") + String(dt.Minute) + SF(":") + String(dt.Second) + SF(" ") +
+                  String(dt.Day) + SF("/") + String(dt.Month) + SF("/") + String(dt.Year);
+        result += SF(" (millis: ") + String(millis()) + SF(")");
+        result += SF("<br/>\n");
+
+        result += SF("LastDistrDay: ") + String(DataManager.settings.lastDistributeDay) + SF(", ");
+        result += SF("Tariffs: ");
+        for (int t = 0; t < TARIFFS_COUNT; t++)
+        {
+            result += String(DataManager.settings.tariffStartHours[t]);
+            result += SF(" (") + String(DataManager.settings.tariffPrices[t]) + SF("), ");
+        }
+        result += SF("BillDay: ") + String(DataManager.settings.billDay) + SF(", ");
+        result += SF("CurrSymbols: '") + String(DataManager.settings.currencySymbols) + SF("', ");
+        result += SF("Monitors: ");
+        for (int m = 0; m < MONITORS_COUNT; m++)
+            result += String(DataManager.settings.monitorsNames[m]) + SF("; ");
+        result += SF("Settings size: ") + String(sizeof(DataManager.settings));
+        result += SF("<br/>\n");
+
+        result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
+        result += SF("<br/>\n<br/>\n");
+
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += SF("Current: ") + String(DataManager.getCurrent(m)) + SF(" A, ");
+            result += SF("Energy: ") + String(DataManager.getEnergy(m)) + SF(" W ");
+            result += SF("<br/>\n");
+        }
+        result += SF("<br/>");
+
+        result += SF("<table style='width:100%'>\n");
+        result += SF("\t<tr><td></td>");
+        for (int i = 0; i < 31; i++)
+        {
+            result += SF("<td>");
+            result += String(i) + SF(" ");
+            result += SF("</td>");
+        }
+        result += SF("</tr>\n");
+
+        result += SF("<tr><td>");
+        result += SF("Hours:");
+        result += SF("</td></tr>\n");
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += SF("\t<tr><td>");
+            result += SF("Monitor ") + String(m) + SF(": ");
+            result += SF("</td>");
+            for (int i = 0; i < 24; i++)
+            {
+                result += SF("<td>");
+                if (i != dt.Hour)
+                    result += toString(DataManager.settings.hours[i][m]) + SF(" ");
+                else
+                {
+                    result += SF("<font color='red'>");
+                    result += toString(DataManager.getCurrentHourEnergy(m));
+                    result += SF("</font> ");
+                }
+                result += SF("</td>");
+            }
+            result += SF("</tr>\n");
+        }
+
+        result += SF("\n");
+        result += SF("<tr><td>");
+        result += SF("Days:");
+        result += SF("</td></tr>\n");
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += SF("\t<tr><td>");
+            result += SF("Monitor ") + String(m);
+            result += SF("</td></tr>\n");
+            DataManager.getCurrentDayEnergy(m, values);
+            for (int t = 0; t < TARIFFS_COUNT; t++)
+            {
+                result += SF("\t\t<tr><td>");
+                result += SF("Tariff ") + String(t) + SF(": ");
+                result += SF("</td>");
+                for (int i = 0; i < 31; i++)
+                {
+                    result += SF("<td>");
+                    if (i != dt.Day - 1)
+                        result += toString(DataManager.settings.days[i][t][m]) + SF(" ");
+                    else
+                    {
+                        result += SF("<font color='red'>");
+                        result += toString(values[t]);
+                        result += SF("</font> ");
+                    }
+                    result += SF("</td>");
+                }
+                result += SF("</tr>\n");
+            }
+        }
+
+        result += SF("\n");
+        result += SF("<tr><td>");
+        result += SF("Months:");
+        result += SF("</td></tr>\n");
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += SF("\t<tr><td>");
+            result += SF("Monitor ") + String(m);
+            result += SF("</td></tr>\n");
+            DataManager.getCurrentMonthEnergy(m, values);
+            for (int t = 0; t < TARIFFS_COUNT; t++)
+            {
+                result += SF("\t\t<tr><td>");
+                result += SF("Tariff ") + String(t) + SF(": ");
+                result += SF("</td>");
+                for (int i = 0; i < 12; i++)
+                {
+                    result += SF("<td>");
+                    if (i != month - 1)
+                        result += toString(DataManager.settings.months[i][t][m]) + SF(" ");
+                    else
+                    {
+                        result += SF("<font color='red'>");
+                        result += toString(values[t]);
+                        result += SF("</font> ");
+                    }
+                    result += SF("</td>");
+                }
+                result += SF("</tr>\n");
+            }
+        }
+        result += SF("</table>");
+
+        server.send(200, "text/html", result);
+        digitalWrite(2, HIGH);
+    }
+
+    String toString(const uint32_t &value)
+    {
+        String str = "";
+        if (value > 1000 * 100)
+        {
+            str += String(value / (1000 * 100)) + " ";
+            if ((value / 100) % 1000 < 100)
+                str += "0";
+            if ((value / 100) % 1000 < 10)
+                str += "0";
+        }
+        str += String((value / 100) % 1000) + ".";
+        if (value > 100 && value % 100 < 10)
+            str += "0";
+        str += String(value % 100);
+        return str;
+    }
+
+    void handleRawData()
+    {
+        digitalWrite(ledPin, LOW);
+
+        String result = "[";
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            uint32_t values[TARIFFS_COUNT];
+            DataManager.getCurrentMonthEnergy(m, values);
+            uint32_t sum = 0;
+            for (int t = 0; t < TARIFFS_COUNT; t++)
+                sum += values[t];
+            result += "[" + String(DataManager.getEnergy(m)) + ", ";
+            result += String(sum * 0.01) + "]";
+            if (m < MONITORS_COUNT - 1)
+                result += ", ";
+        }
+        result += "]";
+
+        server.send(200, "text/plain", result);
+        digitalWrite(ledPin, HIGH);
+    }
+
+    void handleRestart()
+    {
+        server.client().setNoDelay(true);
+        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"15;URL=/\">Update Success! Rebooting...\n")); 
+        delay(100);
+        server.client().stop();
+        ESP.restart();
     }
 };
 

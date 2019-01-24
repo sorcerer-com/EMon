@@ -1,0 +1,2 @@
+http://www.learningaboutelectronics.com/Articles/Capacitive-voltage-divider.php
+https://electronics.stackexchange.com/questions/150588/sensing-ac-high-voltage-to-microcontroller

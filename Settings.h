@@ -34,8 +34,8 @@ struct Settings
 
     int8_t timeZone = 0;
     uint8_t tariffStartHours[TARIFFS_COUNT] = {0, 0, 0};
-    uint8_t billDay = 1;
     double tariffPrices[TARIFFS_COUNT] = {0.0, 0.0, 0.0};
+    uint8_t billDay = 1;
     char currencySymbols[5];
     char monitorsNames[MONITORS_COUNT][MONITOR_NAME_LENGTH];
     // add new values in the end
