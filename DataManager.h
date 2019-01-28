@@ -8,6 +8,8 @@
 #include "src/ADS1015.h"
 #include "src/EnergyMonitor.h"
 
+extern "C" uint32_t _SPIFFS_end;
+
 class DataManagerClass
 {
   private:
@@ -19,6 +21,8 @@ class DataManagerClass
     EnergyMonitor monitor2;
     EnergyMonitor monitor3;
     EnergyMonitor monitor4;
+
+    uint32_t dataBuffer[MONITORS_COUNT][60]; // data for the last hour (per minute)
 
   public:
     Settings settings;
@@ -34,20 +38,24 @@ class DataManagerClass
         EEPROM.begin(4096);
         readEEPROM(settings);
 
-        // retry 5 times to get the time, else restart
+        // read data buffer from the end of the EEPROM
+        uint32_t EEPROM_end = ((uint32_t)&_SPIFFS_end - 0x40200000) + SPI_FLASH_SEC_SIZE;
+        noInterrupts();
+        spi_flash_read(EEPROM_end - sizeof(dataBuffer) - 1, (uint32_t *)dataBuffer, sizeof(dataBuffer));
+        interrupts();
+
+        // retry 5 times to get the time, else try every minute on update
         for (int i = 0; i < 5; i++)
         {
             startTime = getTime();
             if (startTime != 0)
                 break;
         }
-        if (startTime == 0) // TODO: lose data, think to save data without startTime (combine with do it more often)
-            ESP.restart();
 
         date_time dt = getCurrentTime();
         DEBUGLOG("DataManager", "Start time: %02d:%02d:%02d %02d/%02d/%04d",
                  dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
-        timer = millis() - (dt.Minute * SECONDS_IN_A_MINUTE + dt.Second) * MILLIS_IN_A_SECOND;
+        timer = millis() - dt.Second * MILLIS_IN_A_SECOND;
 
         ads.setGain(GAIN_ONE); // 1x gain   +/- 4.096V  1 bit = 2mV      0.125mV
         ads.begin();
@@ -58,27 +66,43 @@ class DataManagerClass
         for (int i = 0; i < MONITORS_COUNT; i++)
             getMonitor(i).update();
 
-        if (millis() - timer > MILLIS_IN_AN_HOUR) // TODO: do it more offten?
+        if (millis() - timer > MILLIS_IN_A_MINUTE)
         {
             timer = millis();
+
+            if (startTime == 0) // if time isn't getted in setup, try again
+                startTime = getTime();
 
             date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %02d:%02d:%02d %02d/%02d/%04d",
                      dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
 
-            distributeData(dt);
-
-            int prevHour = dt.Hour - 1;
-            if (prevHour < 0)
-                prevHour += 24;
-            for (int i = 0; i < MONITORS_COUNT; i++)
+            if (dt.Minute == 0 && startTime != 0) // in the end of the minute and if there is start time
             {
-                settings.hours[prevHour][i] = getMonitor(i).getEnergy(); // TODO: add some justification value (*0.88)
+                distributeData(dt);
 
-                DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
-                         prevHour, i, settings.hours[prevHour][i]);
+                int prevHour = dt.Hour - 1;
+                if (prevHour < 0)
+                    prevHour += 24;
+                for (int m = 0; m < MONITORS_COUNT; m++)
+                {
+                    uint32_t sum = 0;
+                    for (int i = 0; i < 60; i++)
+                    {
+                        if (dataBuffer[m][i] != 0xFFFFFFFF)
+                            sum += dataBuffer[m][i];
+                    }
+                    settings.hours[prevHour][m] = sum; // TODO: add some justification value (*0.88)
+
+                    DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
+                             prevHour, m, settings.hours[prevHour][m]);
+                }
+                writeEEPROM(settings);
+                memset(dataBuffer, 0xFF, sizeof(dataBuffer));
             }
-            writeEEPROM(settings);
+
+            for (int m = 0; m < MONITORS_COUNT; m++)
+                writeToDataBuffer(m, dt.Minute, getMonitor(m).getEnergy());
         }
     }
 
@@ -95,7 +119,13 @@ class DataManagerClass
 
     inline uint32_t getCurrentHourEnergy(const int &monitorIdx)
     {
-        return getMonitor(monitorIdx).getEnergy(false);
+        uint32_t sum = 0;
+        for (int i = 0; i < 60; i++)
+        {
+            if (dataBuffer[monitorIdx][i] != 0xFFFFFFFF)
+                sum += dataBuffer[monitorIdx][i];
+        }
+        return sum + getMonitor(monitorIdx).getEnergy(false);
     }
 
     inline void getCurrentDayEnergy(const int &monitorIdx, uint32_t values[TARIFFS_COUNT])
@@ -233,6 +263,20 @@ class DataManagerClass
         case 3:
             return monitor4;
         }
+    }
+
+    inline bool writeToDataBuffer(const int &monitorIdx, const int &valueIdx, uint32_t value)
+    {
+        if (monitorIdx < 0 || monitorIdx >= MONITORS_COUNT ||
+            valueIdx < 0 || valueIdx >= 60)
+            return false;
+
+        dataBuffer[monitorIdx][valueIdx] = value;
+
+        // write only this value to EEPROM
+        uint32_t EEPROM_end = ((uint32_t)&_SPIFFS_end - 0x40200000) + SPI_FLASH_SEC_SIZE;
+        int idx = monitorIdx * 60 + valueIdx;
+        return spi_flash_write(EEPROM_end - sizeof(dataBuffer) - 1 + idx * sizeof(value), &value, sizeof(value)) == SPI_FLASH_RESULT_OK;
     }
 };
 

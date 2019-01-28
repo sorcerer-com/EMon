@@ -17,8 +17,9 @@
 
 #define MILLIS_IN_A_SECOND 1000
 #define SECONDS_IN_A_MINUTE 60
-#define SECONDS_IN_AN_HOUR 3600
-#define MILLIS_IN_AN_HOUR 3600000
+#define MINUTES_IN_AN_HOUR 60
+#define MILLIS_IN_A_MINUTE MILLIS_IN_A_SECOND *SECONDS_IN_A_MINUTE
+#define SECONDS_IN_AN_HOUR SECONDS_IN_A_MINUTE *MINUTES_IN_AN_HOUR
 
 #define MONITORS_COUNT 4
 #define TARIFFS_COUNT 3
@@ -68,6 +69,8 @@ void readEEPROM(Settings &settings)
 void writeEEPROM(const Settings &settings)
 {
     DEBUGLOG("Settings", "Write settings with size: %d", sizeof(settings));
+    // clear the data buffer first
+    memset(EEPROM.getDataPtr(), 0xFF, EEPROM.length());
     EEPROM.put(0, settings);
     EEPROM.commit();
 }

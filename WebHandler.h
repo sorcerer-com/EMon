@@ -265,7 +265,8 @@ class WebHandler
         result += SF("Monitors: ");
         for (int m = 0; m < MONITORS_COUNT; m++)
             result += String(DataManager.settings.monitorsNames[m]) + SF("; ");
-        result += SF("Settings size: ") + String(sizeof(DataManager.settings));
+        result += SF("Settings size: ") + String(sizeof(DataManager.settings)) + " + " + String(60 * MONITORS_COUNT * sizeof(uint32_t));
+        result += SF(" = ") + String(sizeof(DataManager.settings) + 60 * MONITORS_COUNT * sizeof(uint32_t));
         result += SF("<br/>\n");
 
         result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
@@ -426,7 +427,7 @@ class WebHandler
     void handleRestart()
     {
         server.client().setNoDelay(true);
-        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"15;URL=/\">Update Success! Rebooting...\n")); 
+        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n")); 
         delay(100);
         server.client().stop();
         ESP.restart();
