@@ -92,7 +92,7 @@ class DataManagerClass
                         if (dataBuffer[m][i] != 0xFFFFFFFF)
                             sum += dataBuffer[m][i];
                     }
-                    settings.hours[prevHour][m] = sum; // TODO: add some justification value (*0.88)
+                    settings.hours[prevHour][m] = sum * settings.coefficient;
 
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
                              prevHour, m, settings.hours[prevHour][m]);
@@ -206,6 +206,7 @@ class DataManagerClass
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;
+        // TODO: if billDay is 31, but the month is to 30(or 28)
         if (dt.Day == settings.billDay) // the data for the month is full
         {
             for (int i = 0; i < MONITORS_COUNT; i++)

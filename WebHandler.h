@@ -65,6 +65,14 @@ class WebHandler
             result += SF("data.settings['Monitors Names'][") + String(m) + SF("] = '");
             result += String(DataManager.settings.monitorsNames[m]) + SF("';\n");
         }
+        result += SF("data.settings['Coefficient'] = ") + String(DataManager.settings.coefficient) + SF(";\n");
+        result += SF("data.settings['WiFi SSID'] = '") + String(DataManager.settings.wifi_ssid) + SF("';\n");
+        result += SF("data.settings['WiFi Passphrase'] = '") + String(DataManager.settings.wifi_passphrase) + SF("';\n");
+        result += SF("data.settings['WiFi IP'] = '") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF("';\n");
+        result += SF("data.settings['WiFi Gateway'] = '") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF("';\n");
+        result += SF("data.settings['WiFi Subnet'] = '") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF("';\n");
+        result += SF("data.settings['WiFi DNS'] = '") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF("';\n");
+        // TODO: add all settings
         result += SF("\n");
 
         result += SF("data.current = {};\n");
@@ -74,27 +82,32 @@ class WebHandler
         result += SF("data.current.month = [];\n");
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
+            result += SF("// Monitor ") + String(m) + SF("\n");
             result += SF("data.current.energy[") + String(m) + SF("] = ");
             result += String(DataManager.getEnergy(m)) + SF(";\n");
             result += SF("data.current.hour[") + String(m) + SF("] = ");
             result += String(DataManager.getCurrentHourEnergy(m)) + SF(";\n");
 
             uint32_t values[TARIFFS_COUNT];
-            result += SF("data.current.day[") + String(m) + SF("] = [];\n");
             DataManager.getCurrentDayEnergy(m, values);
+            result += SF("data.current.day[") + String(m) + SF("] = [");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += SF("data.current.day[") + String(m) + SF("][") + String(t) + SF("] = ");
-                result += String(values[t]) + SF(";\n");
+                result += String(values[t]);
+                if (t < TARIFFS_COUNT - 1)
+                    result += SF(", ");
             }
+            result += SF("];\n");
 
-            result += SF("data.current.month[") + String(m) + SF("] = [];\n");
             DataManager.getCurrentMonthEnergy(m, values);
+            result += SF("data.current.month[") + String(m) + SF("] = [");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += SF("data.current.month[") + String(m) + SF("][") + String(t) + SF("] = ");
-                result += String(values[t]) + SF(";\n");
+                result += String(values[t]);
+                if (t < TARIFFS_COUNT - 1)
+                    result += SF(", ");
             }
+            result += SF("];\n");
         }
         result += SF("\n");
 
@@ -102,12 +115,14 @@ class WebHandler
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
             result += SF("// Monitor ") + String(m) + SF("\n");
-            result += SF("data.hours[") + String(m) + SF("] = [];\n");
+            result += SF("data.hours[") + String(m) + SF("] = [");
             for (int h = 0; h < 24; h++)
             {
-                result += SF("data.hours[") + String(m) + SF("][") + String(h) + SF("] = ");
-                result += String(DataManager.settings.hours[h][m]) + SF(";\n");
+                result += String(DataManager.settings.hours[h][m]);
+                if (h < 23)
+                    result += SF(", ");
             }
+            result += SF("];\n");
         }
         result += SF("\n");
 
@@ -118,13 +133,15 @@ class WebHandler
             result += SF("data.days[") + String(m) + SF("] = [];\n");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += SF("// Tariff ") + String(t) + SF("\n");
-                result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("] = [];\n");
+                //result += SF("// Tariff ") + String(t) + SF("\n");
+                result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int d = 0; d < 31; d++)
                 {
-                    result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("][") + String(d) + SF("] = ");
-                    result += String(DataManager.settings.days[d][t][m]) + SF(";\n");
+                    result += String(DataManager.settings.days[d][t][m]);
+                    if (d < 30)
+                        result += SF(", ");
                 }
+                result += SF("];\n");
             }
         }
         result += SF("\n");
@@ -136,13 +153,15 @@ class WebHandler
             result += SF("data.months[") + String(m) + SF("] = [];\n");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += SF("// Tariff ") + String(t) + SF("\n");
-                result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("] = [];\n");
+                //result += SF("// Tariff ") + String(t) + SF("\n");
+                result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int i = 0; i < 12; i++)
                 {
-                    result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("][") + String(i) + SF("] = ");
-                    result += String(DataManager.settings.months[i][t][m]) + SF(";\n");
+                    result += String(DataManager.settings.months[i][t][m]);
+                    if (i < 11)
+                        result += SF(", ");
                 }
+                result += SF("];\n");
             }
         }
         result += SF("// ") + String(millis() - timer) + SF(", ") + String(result.length());
@@ -247,7 +266,9 @@ class WebHandler
 
         String result = SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI());
         result += SF("<br/>\n");
+        // TODO: maybe add AP info too
 
+        result += "Local Time: ";
         result += String(dt.Hour) + SF(":") + String(dt.Minute) + SF(":") + String(dt.Second) + SF(" ") +
                   String(dt.Day) + SF("/") + String(dt.Month) + SF("/") + String(dt.Year);
         result += SF(" (millis: ") + String(millis()) + SF(")");
@@ -265,6 +286,14 @@ class WebHandler
         result += SF("Monitors: ");
         for (int m = 0; m < MONITORS_COUNT; m++)
             result += String(DataManager.settings.monitorsNames[m]) + SF("; ");
+        result += SF("Coefficient: ") + String(DataManager.settings.coefficient) + SF(", ");
+        result += SF("WiFi SSID: '") + String(DataManager.settings.wifi_ssid) + SF("', ");
+        result += SF("WiFi Passphrase: '") + String(DataManager.settings.wifi_passphrase) + SF("', ");
+        result += SF("WiFi IP: ") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF(", ");
+        result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF(", ");
+        result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF(", ");
+        result += SF("WiFi DNS: ") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF(", ");
+        // TODO: add all settings
         result += SF("Settings size: ") + String(sizeof(DataManager.settings)) + " + " + String(60 * MONITORS_COUNT * sizeof(uint32_t));
         result += SF(" = ") + String(sizeof(DataManager.settings) + 60 * MONITORS_COUNT * sizeof(uint32_t));
         result += SF("<br/>\n");
@@ -378,6 +407,7 @@ class WebHandler
             }
         }
         result += SF("</table>");
+        result += String(result.length());
 
         server.send(200, "text/html", result);
         digitalWrite(2, HIGH);

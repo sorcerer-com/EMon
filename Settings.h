@@ -23,7 +23,9 @@
 
 #define MONITORS_COUNT 4
 #define TARIFFS_COUNT 3
+#define CURRENCY_SYMBOLS_LENGTH 5
 #define MONITOR_NAME_LENGTH 50
+#define PASSWORD_LENGTH 10
 
 struct Settings
 {
@@ -33,12 +35,25 @@ struct Settings
     uint32_t hours[24][MONITORS_COUNT];
     uint8_t lastDistributeDay = 1;
 
+    // basic settings
     int8_t timeZone = 0;
     uint8_t tariffStartHours[TARIFFS_COUNT] = {0, 0, 0};
     double tariffPrices[TARIFFS_COUNT] = {0.0, 0.0, 0.0};
     uint8_t billDay = 1;
-    char currencySymbols[5];
+    char currencySymbols[CURRENCY_SYMBOLS_LENGTH];
     char monitorsNames[MONITORS_COUNT][MONITOR_NAME_LENGTH];
+
+    // advanced settings
+    char password[PASSWORD_LENGTH];
+    double coefficient = 1;
+
+    //WiFi settings
+    char wifi_ssid[32];
+    char wifi_passphrase[64];
+    uint32_t wifi_ip;
+    uint32_t wifi_gateway;
+    uint32_t wifi_subnet;
+    uint32_t wifi_dns;
     // add new values in the end
 };
 
@@ -50,7 +65,7 @@ void readEEPROM(Settings &settings)
     EEPROM.get(0, settings);
 
     // TODO: remove
-    settings.lastDistributeDay = 11;
+    //settings.lastDistributeDay = 11;
     settings.timeZone = 2;
     settings.tariffStartHours[0] = 7;
     settings.tariffStartHours[1] = 23;
@@ -64,6 +79,16 @@ void readEEPROM(Settings &settings)
     strcpy(settings.monitorsNames[1], String("Furna, Hol, Kotle").c_str());
     strcpy(settings.monitorsNames[2], String("Boiler, Spalnia, Detska, Kotle").c_str());
     strcpy(settings.monitorsNames[3], "");
+    //
+    strcpy(settings.password, "");
+    settings.coefficient = 1;
+    //
+    strcpy(settings.wifi_ssid, "m68");
+    strcpy(settings.wifi_passphrase, "bekonche");
+    //settings.wifi_ip = IPAddress(192, 168, 0, 105);
+    //settings.wifi_gateway = IPAddress(192, 168, 0, 1);
+    //settings.wifi_subnet = IPAddress(255, 255, 255, 0);
+    //settings.wifi_dns = IPAddress(192, 168, 0, 1);
 }
 
 void writeEEPROM(const Settings &settings)

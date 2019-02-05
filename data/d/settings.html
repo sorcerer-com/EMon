@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link rel="icon" href="../favicon.ico" type="image/x-icon">
+
+	<title>Energy Monitor</title>
+
+	<!-- JQuery -->
+	<script src="../res/jquery-3.3.1.min.js"></script>
+
+	<!-- Bootstrap -->
+	<link rel="stylesheet" href="../res/bootstrap.min.css">
+	<script src="../res/bootstrap.min.js"></script>
+
+	<!-- CSS -->
+	<link rel="stylesheet" type="text/css" href="style.css">
+
+	<!-- Javascript -->
+	<script src="../res/curve.min.js"></script>
+	<script src="../res/charts.js"></script>
+
+	<script src="../res/javascript.js"></script>
+</head>
+
+<body>
+	<header>
+		<div class="glyphicon glyphicon-flash pull-left"></div>
+		Energy Monitor
+		<a href="../m/settings.html">
+			<div class="glyphicon glyphicon-phone pull-right"></div>
+		</a>
+	</header>
+
+	<script>
+		$(window).on("load", function () {
+			for (var key in data.settings) {
+				var value = data.settings[key];
+				if (Array.isArray(value)) {
+					var inputs = $(`input[name="${key}[]"]`)
+					for (var i = 0; i < value.length; i++) {
+						inputs[i].title = value[i];
+						inputs[i].value = value[i];
+					}
+				}
+				else {
+					var input = $(`input[name="${key}"]`)[0]
+					input.title = value;
+					input.value = value;
+				}
+			}
+		});
+	</script>
+			
+	<div class="pages">
+		<section class="section-settings">
+			<p class="section-title">WiFi Settings</p>
+			<form id="base_settings" action="/settings" method="post">
+				<p>SSID:</p>
+				<input type="text" name="WiFi SSID" maxlength="32">
+				<p>Passphrase:</p>
+				<input type="text" name="WiFi Passphrase" maxlength="64">
+				<summary title="if no DHCP">Optional</summary>
+				<p>IP:</p>
+				<input type="text" name="WiFi IP" maxlength="15">
+				<p>Gateway:</p>
+				<input type="text" name="WiFi Gateway" maxlength="15">
+				<p>Subnet:</p>
+				<input type="text" name="WiFi Subnet" maxlength="15">
+				<p>DNS:</p>
+				<input type="text" name="WiFi DNS" maxlength="15">
+				<input type="submit" value="Save">
+			</form>
+		</section>
+		
+		<section class="section-settings">
+			<p class="section-title">Base Settings</p>
+			<form id="base_settings" action="/settings" method="post">
+				<!-- TODO: names like in the settings.h not in the json -->
+				<p>Time Zone:</p>
+				<input type="number" name="Time Zone" min="-11" max="12" required>
+				<p>Tariff Start Hours 1:</p>
+				<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+				<p>Tariff Start Hours 2:</p>
+				<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+				<p>Tariff Start Hours 3:</p>
+				<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+				<p>Tariff Prices 1:</p>
+				<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+				<p>Tariff Prices 2:</p>
+				<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+				<p>Tariff Prices 3:</p>
+				<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+				<p>Bill Day:</p>
+				<input type="number" name="Bill Day" min="1" max="31" required>
+				<p>Currency Symbols:</p>
+				<input type="text" name="Currency Symbols" maxlength="5">
+				<p>Monitors Names 1:</p>
+				<input type="text" name="Monitors Names[]" maxlength="50">
+				<p>Monitors Names 2:</p>
+				<input type="text" name="Monitors Names[]" maxlength="50">
+				<p>Monitors Names 3:</p>
+				<input type="text" name="Monitors Names[]" maxlength="50">
+				<p>Monitors Names 4:</p>
+				<input type="text" name="Monitors Names[]" maxlength="50">
+				<input type="submit" value="Save">
+			</form>
+		</section>
+		
+		<section class="section-settings">
+			<p class="section-title">Advanced Settings</p>
+			<form id="base_settings" action="/settings" method="post">
+				<p>New Password:</p>
+				<input type="password" name="Password" max="10" value="*****">
+				<p>Confirm Password:</p>
+				<input type="password" name="Confirm Password" max="10" value="*****">
+					<p title="Power consumption tune coefficient">Coefficient:</p>
+				<input type="number" name="Coefficient" min="0" step="0.01" required>
+				<p>Update Code:</p>
+				<input type="file" name="Update Flash" accept=".bin">
+				<p>Update UI:</p>
+				<input type="file" name="Update Spiffs" accept=".image">
+				<input type="submit" value="Save">
+			</form>
+			<hr/>
+			<form id="base_settings" action="/settings" method="post">
+				<input type="submit" value="Factory Reset">
+			</form>
+		</section>
+	</div>
+
+	<footer>
+		<ul class="row">
+			<li class="col-xs-3">
+				<a href="settings.html" id="active">
+					<div class="glyphicon glyphicon-menu-hamburger"></div>
+					<p>Settings</p>
+				</a>
+			</li>
+			<li class="col-xs-2">
+				<a href="consumption.html">
+					<div class="glyphicon glyphicon-home"></div>
+					<p>Consumption</p>
+				</a>
+			</li>
+			<li class="col-xs-2">
+				<a href="current.html">
+					<div class="glyphicon glyphicon-eye-open"></div>
+					<p>Current</p>
+				</a>
+			</li>
+			<li class="col-xs-2">
+				<a href="history.html">
+					<div class="glyphicon glyphicon-stats"></div>
+					<p>History</p>
+				</a>
+			</li>
+			<li class="col-xs-3">
+				<a onclick="document.location.reload(true)" style="cursor: pointer">
+					<div class="glyphicon glyphicon-refresh"></div>
+					<p>Refresh</p>
+				</a>
+			</li>
+		</ul>
+	</footer>
+
+</body>
+
+</html>

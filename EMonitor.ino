@@ -16,12 +16,21 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer2 httpUpdater;
 WebHandler webHandler(server);
 
-// TODO: restart every day
+// TODO: hardware reset way, if cannot connect to WiFi (or create AP)
+// TODO: update
+// TODO: reset
+// TODO: WiFi settings - ssid, pass, static ip, gateway, subnet, dns
+// TODO: login password
+// TODO: maybe define real monitors count
+// TODO: WiFi.hostname("emon.local"); / MDNS.begin("emon")
 void setup()
 {
   Serial.begin(9600);
 
   WiFi.mode(WIFI_STA);
+  //WiFi.mode(WIFI_AP_STA);
+  //String ssid = SF("EnergyMonitor_") + String(ESP.getChipId(), HEX);
+  //WiFi.softAP(ssid.c_str(), "12345678");
   wifiMulti.addAP("m68", "bekonche");
   wifiMulti.addAP("WL0242_2.4G_13A608", "bekonche");
 
@@ -53,6 +62,7 @@ void loop()
   ArduinoOTA.handle();
   server.handleClient();
 
+  // TODO: maybe do it on some time (not every time)
   if (wifiMulti.run() != WL_CONNECTED)
   {
     Serial.println("Re-connecting...");
