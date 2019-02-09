@@ -3,12 +3,14 @@
 
 #include <ESP8266WebServer.h>
 #include <FS.h>
+#include <StreamString.h>
 
 class WebHandler
 {
   private:
     const int ledPin = 2;
     ESP8266WebServer &server;
+    bool updated = false;
 
   public:
     WebHandler(ESP8266WebServer &server) : server(server)
@@ -20,6 +22,7 @@ class WebHandler
     void setup()
     {
         server.on("/data.js", [&]() { handleDataFile(); });
+        server.on("/settings", HTTP_POST, [&]() { handleSettings(); }, [&]() { handleUpdate(); });
         server.on("/raw", [&]() { handleRaw(); });
         server.on("/data", [&]() { handleRawData(); });
         server.on("/restart", [&]() { handleRestart(); });
@@ -47,32 +50,31 @@ class WebHandler
         result += SF("\n");
 
         result += SF("data.settings = {};\n");
-        result += SF("data.settings['Time Zone'] = ") + String(DataManager.settings.timeZone) + SF(";\n");
-        result += SF("data.settings['Tariff Start Hours'] = [];\n");
-        result += SF("data.settings['Tariff Prices'] = [];\n");
+        result += SF("data.settings.timeZone = ") + String(DataManager.settings.timeZone) + SF(";\n");
+        result += SF("data.settings.tariffStartHours = [];\n");
+        result += SF("data.settings.tariffPrices = [];\n");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
-            result += SF("data.settings['Tariff Start Hours'][") + String(t) + SF("] = ");
+            result += SF("data.settings.tariffStartHours[") + String(t) + SF("] = ");
             result += String(DataManager.settings.tariffStartHours[t]) + SF(";\n");
-            result += SF("data.settings['Tariff Prices'][") + String(t) + SF("] = ");
+            result += SF("data.settings.tariffPrices[") + String(t) + SF("] = ");
             result += String(DataManager.settings.tariffPrices[t], 5) + SF(";\n");
         }
-        result += SF("data.settings['Bill Day'] = ") + String(DataManager.settings.billDay) + SF(";\n");
-        result += SF("data.settings['Currency Symbols'] = '") + String(DataManager.settings.currencySymbols) + SF("';\n");
-        result += SF("data.settings['Monitors Names'] = [];\n");
+        result += SF("data.settings.billDay = ") + String(DataManager.settings.billDay) + SF(";\n");
+        result += SF("data.settings.currencySymbols = '") + String(DataManager.settings.currencySymbols) + SF("';\n");
+        result += SF("data.settings.monitorsNames = [];\n");
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("data.settings['Monitors Names'][") + String(m) + SF("] = '");
+            result += SF("data.settings.monitorsNames[") + String(m) + SF("] = '");
             result += String(DataManager.settings.monitorsNames[m]) + SF("';\n");
         }
-        result += SF("data.settings['Coefficient'] = ") + String(DataManager.settings.coefficient) + SF(";\n");
-        result += SF("data.settings['WiFi SSID'] = '") + String(DataManager.settings.wifi_ssid) + SF("';\n");
-        result += SF("data.settings['WiFi Passphrase'] = '") + String(DataManager.settings.wifi_passphrase) + SF("';\n");
-        result += SF("data.settings['WiFi IP'] = '") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF("';\n");
-        result += SF("data.settings['WiFi Gateway'] = '") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF("';\n");
-        result += SF("data.settings['WiFi Subnet'] = '") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF("';\n");
-        result += SF("data.settings['WiFi DNS'] = '") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF("';\n");
-        // TODO: add all settings
+        result += SF("data.settings.coefficient = ") + String(DataManager.settings.coefficient) + SF(";\n");
+        result += SF("data.settings.wifi_ssid = '") + String(DataManager.settings.wifi_ssid) + SF("';\n");
+        result += SF("data.settings.wifi_passphrase = '") + String(DataManager.settings.wifi_passphrase) + SF("';\n");
+        result += SF("data.settings.wifi_ip = '") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_gateway = '") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_subnet = '") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_dns = '") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF("';\n");
         result += SF("\n");
 
         result += SF("data.current = {};\n");
@@ -248,6 +250,181 @@ class WebHandler
         return result;
     }
 
+    void handleSettings()
+    {
+        digitalWrite(ledPin, LOW);
+
+        String temp ;
+        int listParamIdx = 0;
+        for (int i = 0; i < server.args(); i++)
+        {
+            const String &name = server.argName(i);
+            const String &value = server.arg(i);
+            temp += name + ": " + value + ", ";
+
+            if (!name.endsWith("[]"))
+                listParamIdx = 0;
+
+            // basic settings
+            if (name == "timeZone")
+                DataManager.settings.timeZone = value.toInt();
+            else if (name == "tariffStartHours[]")
+            {
+                DataManager.settings.tariffStartHours[listParamIdx] = value.toInt();
+                listParamIdx++;
+            }
+            else if (name == "tariffPrices[]")
+            {
+                DataManager.settings.tariffPrices[listParamIdx] = value.toFloat();
+                listParamIdx++;
+            }
+            else if (name == "billDay")
+                DataManager.settings.billDay = value.toInt();
+            else if (name == "currencySymbols")
+                strcpy(DataManager.settings.currencySymbols, value.c_str());
+            else if (name == "monitorsNames[]")
+            {
+                strcpy(DataManager.settings.monitorsNames[listParamIdx], value.c_str());
+                listParamIdx++;
+            }
+            // advanced settings
+            else if (name == "password" && value != "*****")
+                strcpy(DataManager.settings.password, value.c_str());
+            else if (name == "coefficient")
+                DataManager.settings.coefficient = value.toFloat();
+            // WiFi settings
+            else if (name == "wifi_ssid")
+                strcpy(DataManager.settings.wifi_ssid, value.c_str());
+            else if (name == "wifi_passphrase")
+                strcpy(DataManager.settings.wifi_passphrase, value.c_str());
+            else if (name == "wifi_ip")
+            {
+                IPAddress ip;
+                if (value != "" && ip.fromString(value))
+                    DataManager.settings.wifi_ip = ip;
+                else
+                    DataManager.settings.wifi_ip = 0;
+            }
+            else if (name == "wifi_gateway")
+            {
+                IPAddress ip;
+                if (value != "" && ip.fromString(value))
+                    DataManager.settings.wifi_gateway = ip;
+                else
+                    DataManager.settings.wifi_gateway = 0;
+            }
+            else if (name == "wifi_subnet")
+            {
+                IPAddress ip;
+                if (value != "" && ip.fromString(value))
+                    DataManager.settings.wifi_subnet = ip;
+                else
+                    DataManager.settings.wifi_subnet = 0;
+            }
+            else if (name == "wifi_dns")
+            {
+                IPAddress ip;
+                if (value != "" && ip.fromString(value))
+                    DataManager.settings.wifi_dns = ip;
+                else
+                    DataManager.settings.wifi_dns = 0;
+            }
+            // reset
+            else if (name == "factory_reset")
+            {
+                resetSettings(DataManager.settings);
+            }
+        }
+
+        // update
+        if (updated)
+        {
+            updated = false;
+            String response;
+            if (Update.hasError())
+            {
+                StreamString str;
+                Update.printError(str);
+                response = SF("Update error: ") + str.c_str();
+            }
+            else
+                response = SF("Update Success");
+
+            server.client().setNoDelay(true);
+            response = SF("<META http-equiv=\"refresh\" content=\"15;URL=/\">") + response + SF("! Rebooting...\n");
+            server.send(200, "text/html", response);
+            delay(100);
+            server.client().stop();
+            ESP.restart();
+        }
+        else
+        {
+            // TODO: save settings (it'll break minute buffer saving, so save it too)
+            server.sendHeader("Location", server.header("Referer"), true);
+            server.send(302, "text/plain", "");
+        }
+
+        digitalWrite(ledPin, HIGH);
+    }
+
+    void handleUpdate()
+    {
+        digitalWrite(ledPin, LOW);
+        // from ESP8266HTTPUpdateServer
+        // handler for the file upload, get's the sketch bytes, and writes
+        // them through the Update object
+        HTTPUpload &upload = server.upload();
+        int command = U_FLASH;
+        if (upload.name == "update_spiffs")
+            command = U_SPIFFS;
+
+        if (upload.status == UPLOAD_FILE_START)
+        {
+            WiFiUDP::stopAll();
+            DEBUGLOG("WebHandler", "Update: %s", upload.filename.c_str());
+            uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+            if (!Update.begin(maxSketchSpace, command)) //start with max available size
+            {
+#ifdef DEBUG
+                Update.printError(Serial);
+#endif
+            }
+        }
+        else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
+        {
+            DEBUGLOG("WebHandler", ".");
+            if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
+            {
+#ifdef DEBUG
+                Update.printError(Serial);
+#endif
+            }
+        }
+        else if (upload.status == UPLOAD_FILE_END && !Update.hasError())
+        {
+            if (Update.end(true)) //true to set the size to the current progress
+            {
+                DEBUGLOG("WebHandler", "Update Success: %u\nRebooting...\n", upload.totalSize);
+            }
+            else
+            {
+#ifdef DEBUG
+                Update.printError(Serial);
+#endif
+            }
+            updated = true;
+        }
+        else if (upload.status == UPLOAD_FILE_ABORTED)
+        {
+            Update.end();
+            DEBUGLOG("WebHandler", "Update was aborted");
+            updated = true;
+        }
+        delay(0);
+
+        digitalWrite(ledPin, HIGH);
+    }
+
     void handleRaw()
     {
         digitalWrite(ledPin, LOW);
@@ -286,6 +463,7 @@ class WebHandler
         result += SF("Monitors: ");
         for (int m = 0; m < MONITORS_COUNT; m++)
             result += String(DataManager.settings.monitorsNames[m]) + SF("; ");
+        result += SF("Password: ") + String(DataManager.settings.password) + SF(", ");
         result += SF("Coefficient: ") + String(DataManager.settings.coefficient) + SF(", ");
         result += SF("WiFi SSID: '") + String(DataManager.settings.wifi_ssid) + SF("', ");
         result += SF("WiFi Passphrase: '") + String(DataManager.settings.wifi_passphrase) + SF("', ");
@@ -293,7 +471,6 @@ class WebHandler
         result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF(", ");
         result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF(", ");
         result += SF("WiFi DNS: ") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF(", ");
-        // TODO: add all settings
         result += SF("Settings size: ") + String(sizeof(DataManager.settings)) + " + " + String(60 * MONITORS_COUNT * sizeof(uint32_t));
         result += SF(" = ") + String(sizeof(DataManager.settings) + 60 * MONITORS_COUNT * sizeof(uint32_t));
         result += SF("<br/>\n");
@@ -413,7 +590,7 @@ class WebHandler
         digitalWrite(2, HIGH);
     }
 
-    String toString(const uint32_t &value)
+    inline String toString(const uint32_t &value)
     {
         String str = "";
         if (value > 1000 * 100)
@@ -457,7 +634,7 @@ class WebHandler
     void handleRestart()
     {
         server.client().setNoDelay(true);
-        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n")); 
+        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));
         delay(100);
         server.client().stop();
         ESP.restart();

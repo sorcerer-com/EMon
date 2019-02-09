@@ -27,6 +27,7 @@
 #define MONITOR_NAME_LENGTH 50
 #define PASSWORD_LENGTH 10
 
+// TODO: rename to Data
 struct Settings
 {
     // xTARIFFS_COUNT for different tariffs
@@ -45,16 +46,16 @@ struct Settings
 
     // advanced settings
     char password[PASSWORD_LENGTH];
-    double coefficient = 1;
+    double coefficient = 1.0;
 
-    //WiFi settings
+    // WiFi settings
     char wifi_ssid[32];
     char wifi_passphrase[64];
     uint32_t wifi_ip;
     uint32_t wifi_gateway;
     uint32_t wifi_subnet;
     uint32_t wifi_dns;
-    // add new values in the end
+    // add new values in the end (in handleDataFile, handleSettings, handleRaw, reset below)
 };
 
 void readEEPROM(Settings &settings)
@@ -81,7 +82,7 @@ void readEEPROM(Settings &settings)
     strcpy(settings.monitorsNames[3], "");
     //
     strcpy(settings.password, "");
-    settings.coefficient = 1;
+    settings.coefficient = 1.0;
     //
     strcpy(settings.wifi_ssid, "m68");
     strcpy(settings.wifi_passphrase, "bekonche");
@@ -98,6 +99,36 @@ void writeEEPROM(const Settings &settings)
     memset(EEPROM.getDataPtr(), 0xFF, EEPROM.length());
     EEPROM.put(0, settings);
     EEPROM.commit();
+}
+
+void resetSettings(Settings &settings)
+{
+    DEBUGLOG("Settings", "Reset settings");
+
+    memset(settings.months, 0, sizeof(settings.months));
+    memset(settings.days, 0, sizeof(settings.days));
+    memset(settings.hours, 0, sizeof(settings.hours));
+    settings.lastDistributeDay = 0;
+
+    // basic settings
+    settings.timeZone = 0;
+    memset(settings.tariffStartHours, 0, sizeof(settings.tariffStartHours));
+    memset(settings.tariffPrices, 0, sizeof(settings.tariffPrices));
+    settings.billDay = 1;
+    memset(settings.currencySymbols, 0, sizeof(settings.currencySymbols));
+    memset(settings.monitorsNames, 0, sizeof(settings.monitorsNames));
+
+    // advanced settings
+    memset(settings.password, 0, sizeof(settings.password));
+    settings.coefficient = 1.0;
+
+    // WiFi settings
+    memset(settings.wifi_ssid, 0, sizeof(settings.wifi_ssid));
+    memset(settings.wifi_passphrase, 0, sizeof(settings.wifi_passphrase));
+    settings.wifi_ip = 0;
+    settings.wifi_gateway = 0;
+    settings.wifi_subnet = 0;
+    settings.wifi_dns = 0;
 }
 
 #endif

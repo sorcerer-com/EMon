@@ -10,7 +10,7 @@ class EnergyMonitor
     uint8_t channel = 0;
 
     const uint16_t samplesCount = 1480;
-    const uint8_t batchesCount = 74;
+    const uint8_t batchesCount = 148;
     uint8_t batchIdx = 0;
     double irms = 0.0;
 

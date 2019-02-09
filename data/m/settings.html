@@ -44,38 +44,50 @@
 				var value = data.settings[key];
 				if (Array.isArray(value)) {
 					var inputs = $(`input[name="${key}[]"]`)
-					for (var i = 0; i < value.length; i++) {
+					for (var i = 0; i < inputs.length; i++) {
 						inputs[i].title = value[i];
 						inputs[i].value = value[i];
 					}
 				}
 				else {
 					var input = $(`input[name="${key}"]`)[0]
-					input.title = value;
-					input.value = value;
+					if (input != undefined) {
+						input.title = value;
+						input.value = value;
+					}
 				}
 			}
+			// refresh data next time
+			sessionStorage.removeItem("data");
 		});
+		function check(input) {
+			if (input.value != document.getElementsByName("password")[0].value) {
+				input.setCustomValidity('Password Must be Matching.');
+			} else {
+				// input is valid -- reset the error message
+				input.setCustomValidity('');
+			}
+		}
 	</script>
 			
 	<div class="swiper-container">
 		<div class="swiper-wrapper">
 			<section class="section-settings swiper-slide">
 				<p class="section-title">WiFi Settings</p>
-				<form id="base_settings" action="/settings" method="post">
+				<form id="wifi_settings" action="/settings" method="post">
 					<p>SSID:</p>
-					<input type="text" name="WiFi SSID" maxlength="32">
+					<input type="text" name="wifi_ssid" maxlength="32">
 					<p>Passphrase:</p>
-					<input type="text" name="WiFi Passphrase" maxlength="64">
+					<input type="text" name="wifi_passphrase" maxlength="64">
 					<summary title="if no DHCP">Optional</summary>
 					<p>IP:</p>
-					<input type="text" name="WiFi IP" maxlength="15">
+					<input type="text" name="wifi_ip" maxlength="15">
 					<p>Gateway:</p>
-					<input type="text" name="WiFi Gateway" maxlength="15">
+					<input type="text" name="wifi_gateway" maxlength="15">
 					<p>Subnet:</p>
-					<input type="text" name="WiFi Subnet" maxlength="15">
+					<input type="text" name="wifi_subnet" maxlength="15">
 					<p>DNS:</p>
-					<input type="text" name="WiFi DNS" maxlength="15">
+					<input type="text" name="wifi_dns" maxlength="15">
 					<input type="submit" value="Save">
 				</form>
 			</section>
@@ -83,55 +95,55 @@
 			<section class="section-settings swiper-slide">
 				<p class="section-title">Base Settings</p>
 				<form id="base_settings" action="/settings" method="post">
-					<!-- TODO: names like in the settings.h not in the json -->
 					<p>Time Zone:</p>
-					<input type="number" name="Time Zone" min="-11" max="12" required>
+					<input type="number" name="timeZone" min="-11" max="12" required>
 					<p>Tariff Start Hours 1:</p>
-					<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+					<input type="number" name="tariffStartHours[]" min="0" max="23" required>
 					<p>Tariff Start Hours 2:</p>
-					<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+					<input type="number" name="tariffStartHours[]" min="0" max="23" required>
 					<p>Tariff Start Hours 3:</p>
-					<input type="number" name="Tariff Start Hours[]" min="0" max="23" required>
+					<input type="number" name="tariffStartHours[]" min="0" max="23" required>
 					<p>Tariff Prices 1:</p>
-					<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+					<input type="number" name="tariffPrices[]" min="0" step="0.00001" required>
 					<p>Tariff Prices 2:</p>
-					<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+					<input type="number" name="tariffPrices[]" min="0" step="0.00001" required>
 					<p>Tariff Prices 3:</p>
-					<input type="number" name="Tariff Prices[]" min="0" step="0.00001" required>
+					<input type="number" name="tariffPrices[]" min="0" step="0.00001" required>
 					<p>Bill Day:</p>
-					<input type="number" name="Bill Day" min="1" max="31" required>
+					<input type="number" name="billDay" min="1" max="31" required>
 					<p>Currency Symbols:</p>
-					<input type="text" name="Currency Symbols" maxlength="5">
+					<input type="text" name="currencySymbols" maxlength="5">
 					<p>Monitors Names 1:</p>
-					<input type="text" name="Monitors Names[]" maxlength="50">
+					<input type="text" name="monitorsNames[]" maxlength="50">
 					<p>Monitors Names 2:</p>
-					<input type="text" name="Monitors Names[]" maxlength="50">
+					<input type="text" name="monitorsNames[]" maxlength="50">
 					<p>Monitors Names 3:</p>
-					<input type="text" name="Monitors Names[]" maxlength="50">
+					<input type="text" name="monitorsNames[]" maxlength="50">
 					<p>Monitors Names 4:</p>
-					<input type="text" name="Monitors Names[]" maxlength="50">
+					<input type="text" name="monitorsNames[]" maxlength="50">
 					<input type="submit" value="Save">
 				</form>
 			</section>
 			
 			<section class="section-settings swiper-slide">
 				<p class="section-title">Advanced Settings</p>
-				<form id="base_settings" action="/settings" method="post">
+				<form id="advanced_settings" action="/settings" method="post" enctype="multipart/form-data">
 					<p>New Password:</p>
-					<input type="password" name="Password" max="10" value="*****">
+					<input type="password" name="password" max="10" value="*****">
 					<p>Confirm Password:</p>
-					<input type="password" name="Confirm Password" max="10" value="*****">
+					<input type="password" name="confirm_password" max="10" value="*****" oninput="check(this)">
 					<p title="Power consumption tune coefficient">Coefficient:</p>
-					<input type="number" name="Coefficient" min="0" step="0.01" required>
+					<input type="number" name="coefficient" min="0" step="0.01" required>
 					<p>Update Code:</p>
-					<input type="file" name="Update Flash" accept=".bin">
+					<input type="file" name="update_flash" accept=".bin">
 					<p>Update UI:</p>
-					<input type="file" name="Update Spiffs" accept=".image">
+					<input type="file" name="update_spiffs" accept=".image">
 					<input type="submit" value="Save">
 				</form>
 				<hr/>
-				<form id="base_settings" action="/settings" method="post">
-					<input type="submit" value="Factory Reset">
+				<form id="factory_reset" action="/settings" method="post">
+					<input type="hidden" name="factory_reset">
+					<input type="submit" value="Factory Reset" onclick="return confirm('Are you sure?')">
 				</form>
 			</section>
 		</div>

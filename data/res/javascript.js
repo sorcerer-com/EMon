@@ -41,8 +41,8 @@ $(window).on("load", function () {
 
 	// add monitors hints
 	for (var m = 0; m < data.monitorsCount; m++) {
-		if (data.settings['Monitors Names'][m] != "") {
-			$(`.monitor-${m + 1}`).prop("title", data.settings['Monitors Names'][m]);
+		if (data.settings.monitorsNames[m] != "") {
+			$(`.monitor-${m + 1}`).prop("title", data.settings.monitorsNames[m]);
 		}
 	}
 
@@ -58,9 +58,9 @@ $(window).on("load", function () {
 			values[t] += toKilo(data.current.month[m][t]);
 		}
 		total += values[t];
-		totalPrice += values[t] * data.settings['Tariff Prices'][t];
+		totalPrice += values[t] * data.settings.tariffPrices[t];
 	}
-	$(".cr-total-price").html(`${totalPrice.toFixed(2)} ${data.settings['Currency Symbols']}`);
+	$(".cr-total-price").html(`${totalPrice.toFixed(2)} ${data.settings.currencySymbols}`);
 	$(".cr-total-value").html(`(${total.toFixed(2)} kWh)`);
 	// by tariffs
 	if (total == 0) total = 1;
@@ -89,10 +89,10 @@ $(window).on("load", function () {
 			values[t] += toKilo(data.months[m][t][prevBillMonth - 1]);
 		}
 		total += values[t];
-		totalPrice += values[t] * data.settings['Tariff Prices'][t];
+		totalPrice += values[t] * data.settings.tariffPrices[t];
 	}
 	$(".cr-total-prevMonth-price")
-		.append(`${totalPrice.toFixed(2)} ${data.settings['Currency Symbols']}`);
+		.append(`${totalPrice.toFixed(2)} ${data.settings.currencySymbols}`);
 	$(".cr-total-prevMonth-value")
 		.append(` (${total.toFixed(2)} kWh, ${values.map(function (a) { return a.toFixed(2); }).join(" / ")})`);
 
@@ -122,11 +122,11 @@ $(window).on("load", function () {
 			value += toKilo(data.hours[m][h]);
 		}
 
-		if (h >= data.settings['Tariff Start Hours'][0] && h < data.settings['Tariff Start Hours'][1])
+		if (h >= data.settings.tariffStartHours[0] && h < data.settings.tariffStartHours[1])
 			values[0] += value;
-		else if (h >= data.settings['Tariff Start Hours'][1] && h < data.settings['Tariff Start Hours'][2])
+		else if (h >= data.settings.tariffStartHours[1] && h < data.settings.tariffStartHours[2])
 			values[1] += value;
-		else if (h >= data.settings['Tariff Start Hours'][2] || h < data.settings['Tariff Start Hours'][0])
+		else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
 			values[2] += value;
 	}
 	if (total == 0) total = 1;
@@ -265,8 +265,8 @@ $(window).on("load", function () {
 
 	//// Last month per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
-		if (data.settings['Monitors Names'][m] != "") {
-			$(`.section-title.last-month-monitor-${m + 1}`).append(` (${data.settings['Monitors Names'][m]})`);
+		if (data.settings.monitorsNames[m] != "") {
+			$(`.section-title.last-month-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
 		}
 
 		// total
@@ -314,8 +314,8 @@ $(window).on("load", function () {
 
 	//// Year per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
-		if (data.settings['Monitors Names'][m] != "") {
-			$(`.section-title.year-monitor-${m + 1}`).append(` (${data.settings['Monitors Names'][m]})`);
+		if (data.settings.monitorsNames[m] != "") {
+			$(`.section-title.year-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
 		}
 
 		var total = 0;
@@ -404,11 +404,11 @@ function drawLast24Hours(canvasName) {
 				values[h] += toKilo(data.hours[m][hour]);
 			}
 
-			if (hour >= data.settings['Tariff Start Hours'][0] && hour < data.settings['Tariff Start Hours'][1])
+			if (hour >= data.settings.tariffStartHours[0] && hour < data.settings.tariffStartHours[1])
 				colors.push("#ec96a4");
-			else if (hour >= data.settings['Tariff Start Hours'][1] && hour < data.settings['Tariff Start Hours'][2])
+			else if (hour >= data.settings.tariffStartHours[1] && hour < data.settings.tariffStartHours[2])
 				colors.push("#63b59c");
-			else if (hour >= data.settings['Tariff Start Hours'][2] || hour < data.settings['Tariff Start Hours'][0])
+			else if (hour >= data.settings.tariffStartHours[2] || hour < data.settings.tariffStartHours[0])
 				colors.push("#68829e");
 		}
 
@@ -553,7 +553,7 @@ function toKilo(value) {
 function getBillMonth() {
 	var dt = new Date(data.time);
 	var month = dt.getUTCMonth() + 1;
-	if (dt.getUTCDate() < data.settings['Bill Day'])
+	if (dt.getUTCDate() < data.settings.billDay)
 		month--;
 	if (month < 1)
 		month += 12;

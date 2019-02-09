@@ -16,9 +16,7 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer2 httpUpdater;
 WebHandler webHandler(server);
 
-// TODO: hardware reset way, if cannot connect to WiFi (or create AP)
-// TODO: update
-// TODO: reset
+// TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password
 // TODO: WiFi settings - ssid, pass, static ip, gateway, subnet, dns
 // TODO: login password
 // TODO: maybe define real monitors count
@@ -50,6 +48,11 @@ void setup()
   ArduinoOTA.begin();
 
   httpUpdater.setup(&server);
+
+  //ask server to track these headers
+  const char *headerkeys[] = {"Referer"};
+  size_t headerkeyssize = sizeof(headerkeys) / sizeof(char *);
+  server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
 
   SPIFFS.begin();
@@ -57,6 +60,7 @@ void setup()
 
 void loop()
 {
+  // TODO: profile how much time each take:
   DataManager.update();
 
   ArduinoOTA.handle();

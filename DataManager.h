@@ -70,6 +70,8 @@ class DataManagerClass
         {
             timer = millis();
 
+            // TODO: check (millis() / in_minute) % 5 == 0
+            // TODO: maybe save startTime in eeprom - every hour and try to get
             if (startTime == 0) // if time isn't getted in setup, try again
                 startTime = getTime();
 
@@ -77,6 +79,8 @@ class DataManagerClass
             DEBUGLOG("DataManager", "Current time: %02d:%02d:%02d %02d/%02d/%04d",
                      dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
 
+            // TODO: if we missed the 0 minute - power down before 59 to 01 minute, lose data
+            // modify lastDistributeDay, to be Time and check that
             if (dt.Minute == 0 && startTime != 0) // in the end of the minute and if there is start time
             {
                 distributeData(dt);
