@@ -35,7 +35,7 @@ class WebHandler
         });
     }
 
-    void handleDataFile()
+    void handleDataFile() const
     {
         digitalWrite(ledPin, LOW);
 
@@ -50,31 +50,31 @@ class WebHandler
         result += SF("\n");
 
         result += SF("data.settings = {};\n");
-        result += SF("data.settings.timeZone = ") + String(DataManager.settings.timeZone) + SF(";\n");
+        result += SF("data.settings.timeZone = ") + String(DataManager.data.settings.timeZone) + SF(";\n");
         result += SF("data.settings.tariffStartHours = [];\n");
         result += SF("data.settings.tariffPrices = [];\n");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
             result += SF("data.settings.tariffStartHours[") + String(t) + SF("] = ");
-            result += String(DataManager.settings.tariffStartHours[t]) + SF(";\n");
+            result += String(DataManager.data.settings.tariffStartHours[t]) + SF(";\n");
             result += SF("data.settings.tariffPrices[") + String(t) + SF("] = ");
-            result += String(DataManager.settings.tariffPrices[t], 5) + SF(";\n");
+            result += String(DataManager.data.settings.tariffPrices[t], 5) + SF(";\n");
         }
-        result += SF("data.settings.billDay = ") + String(DataManager.settings.billDay) + SF(";\n");
-        result += SF("data.settings.currencySymbols = '") + String(DataManager.settings.currencySymbols) + SF("';\n");
+        result += SF("data.settings.billDay = ") + String(DataManager.data.settings.billDay) + SF(";\n");
+        result += SF("data.settings.currencySymbols = '") + String(DataManager.data.settings.currencySymbols) + SF("';\n");
         result += SF("data.settings.monitorsNames = [];\n");
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
             result += SF("data.settings.monitorsNames[") + String(m) + SF("] = '");
-            result += String(DataManager.settings.monitorsNames[m]) + SF("';\n");
+            result += String(DataManager.data.settings.monitorsNames[m]) + SF("';\n");
         }
-        result += SF("data.settings.coefficient = ") + String(DataManager.settings.coefficient) + SF(";\n");
-        result += SF("data.settings.wifi_ssid = '") + String(DataManager.settings.wifi_ssid) + SF("';\n");
-        result += SF("data.settings.wifi_passphrase = '") + String(DataManager.settings.wifi_passphrase) + SF("';\n");
-        result += SF("data.settings.wifi_ip = '") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_gateway = '") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_subnet = '") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_dns = '") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF("';\n");
+        result += SF("data.settings.coefficient = ") + String(DataManager.data.settings.coefficient) + SF(";\n");
+        result += SF("data.settings.wifi_ssid = '") + String(DataManager.data.settings.wifi_ssid) + SF("';\n");
+        result += SF("data.settings.wifi_passphrase = '") + String(DataManager.data.settings.wifi_passphrase) + SF("';\n");
+        result += SF("data.settings.wifi_ip = '") + String(IPAddress(DataManager.data.settings.wifi_ip).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_gateway = '") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_subnet = '") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF("';\n");
+        result += SF("data.settings.wifi_dns = '") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF("';\n");
         result += SF("\n");
 
         result += SF("data.current = {};\n");
@@ -120,7 +120,7 @@ class WebHandler
             result += SF("data.hours[") + String(m) + SF("] = [");
             for (int h = 0; h < 24; h++)
             {
-                result += String(DataManager.settings.hours[h][m]);
+                result += String(DataManager.data.hours[h][m]);
                 if (h < 23)
                     result += SF(", ");
             }
@@ -139,7 +139,7 @@ class WebHandler
                 result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int d = 0; d < 31; d++)
                 {
-                    result += String(DataManager.settings.days[d][t][m]);
+                    result += String(DataManager.data.days[d][t][m]);
                     if (d < 30)
                         result += SF(", ");
                 }
@@ -159,7 +159,7 @@ class WebHandler
                 result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int i = 0; i < 12; i++)
                 {
-                    result += String(DataManager.settings.months[i][t][m]);
+                    result += String(DataManager.data.months[i][t][m]);
                     if (i < 11)
                         result += SF(", ");
                 }
@@ -167,13 +167,13 @@ class WebHandler
             }
         }
         result += SF("// ") + String(millis() - timer) + SF(", ") + String(result.length());
-        DEBUGLOG("WebHandler", "Generating data.js (%d) for %d", result.length(), (millis() - timer));
+        DEBUGLOG("WebHandler", "Generating data.js (%d bytes) for %d millisec", result.length(), (millis() - timer));
 
         server.send(200, "application/javascript", result);
         digitalWrite(ledPin, HIGH);
     }
 
-    bool handleFileRead(String path)
+    bool handleFileRead(String path) const
     {
         digitalWrite(ledPin, LOW);
 
@@ -200,7 +200,7 @@ class WebHandler
         return false; // If the file doesn't exist, return false
     }
 
-    inline String getContentType(const String &filename)
+    inline String getContentType(const String &filename) const
     {
         if (filename.endsWith(".htm"))
             return "text/html";
@@ -229,7 +229,7 @@ class WebHandler
         return "text/plain";
     }
 
-    inline String datetimeToISOString(const date_time &dt)
+    inline String datetimeToISOString(const date_time &dt) const
     {
         String result = String(dt.Year) + "-";
         if (dt.Month < 10)
@@ -254,85 +254,86 @@ class WebHandler
     {
         digitalWrite(ledPin, LOW);
 
-        String temp ;
         int listParamIdx = 0;
         for (int i = 0; i < server.args(); i++)
         {
             const String &name = server.argName(i);
             const String &value = server.arg(i);
-            temp += name + ": " + value + ", ";
+            DEBUGLOG("WebHandler", "Set setting %s: %s", name.c_str(), value.c_str());
 
             if (!name.endsWith("[]"))
                 listParamIdx = 0;
 
             // basic settings
             if (name == "timeZone")
-                DataManager.settings.timeZone = value.toInt();
+                DataManager.data.settings.timeZone = value.toInt();
             else if (name == "tariffStartHours[]")
             {
-                DataManager.settings.tariffStartHours[listParamIdx] = value.toInt();
+                DataManager.data.settings.tariffStartHours[listParamIdx] = value.toInt();
                 listParamIdx++;
             }
             else if (name == "tariffPrices[]")
             {
-                DataManager.settings.tariffPrices[listParamIdx] = value.toFloat();
+                DataManager.data.settings.tariffPrices[listParamIdx] = value.toFloat();
                 listParamIdx++;
             }
             else if (name == "billDay")
-                DataManager.settings.billDay = value.toInt();
+                DataManager.data.settings.billDay = value.toInt();
             else if (name == "currencySymbols")
-                strcpy(DataManager.settings.currencySymbols, value.c_str());
+                strcpy(DataManager.data.settings.currencySymbols, value.c_str());
             else if (name == "monitorsNames[]")
             {
-                strcpy(DataManager.settings.monitorsNames[listParamIdx], value.c_str());
+                strcpy(DataManager.data.settings.monitorsNames[listParamIdx], value.c_str());
                 listParamIdx++;
             }
             // advanced settings
             else if (name == "password" && value != "*****")
-                strcpy(DataManager.settings.password, value.c_str());
+                strcpy(DataManager.data.settings.password, value.c_str());
             else if (name == "coefficient")
-                DataManager.settings.coefficient = value.toFloat();
+                DataManager.data.settings.coefficient = value.toFloat();
             // WiFi settings
+            // TODO: restart when wifi settings changed
             else if (name == "wifi_ssid")
-                strcpy(DataManager.settings.wifi_ssid, value.c_str());
+                strcpy(DataManager.data.settings.wifi_ssid, value.c_str());
             else if (name == "wifi_passphrase")
-                strcpy(DataManager.settings.wifi_passphrase, value.c_str());
+                strcpy(DataManager.data.settings.wifi_passphrase, value.c_str());
             else if (name == "wifi_ip")
             {
                 IPAddress ip;
                 if (value != "" && ip.fromString(value))
-                    DataManager.settings.wifi_ip = ip;
+                    DataManager.data.settings.wifi_ip = ip;
                 else
-                    DataManager.settings.wifi_ip = 0;
+                    DataManager.data.settings.wifi_ip = 0;
             }
             else if (name == "wifi_gateway")
             {
                 IPAddress ip;
                 if (value != "" && ip.fromString(value))
-                    DataManager.settings.wifi_gateway = ip;
+                    DataManager.data.settings.wifi_gateway = ip;
                 else
-                    DataManager.settings.wifi_gateway = 0;
+                    DataManager.data.settings.wifi_gateway = 0;
             }
             else if (name == "wifi_subnet")
             {
                 IPAddress ip;
                 if (value != "" && ip.fromString(value))
-                    DataManager.settings.wifi_subnet = ip;
+                    DataManager.data.settings.wifi_subnet = ip;
                 else
-                    DataManager.settings.wifi_subnet = 0;
+                    DataManager.data.settings.wifi_subnet = 0;
             }
             else if (name == "wifi_dns")
             {
                 IPAddress ip;
                 if (value != "" && ip.fromString(value))
-                    DataManager.settings.wifi_dns = ip;
+                    DataManager.data.settings.wifi_dns = ip;
                 else
-                    DataManager.settings.wifi_dns = 0;
+                    DataManager.data.settings.wifi_dns = 0;
             }
             // reset
             else if (name == "factory_reset")
             {
-                resetSettings(DataManager.settings);
+                DataManager.data.reset();
+                DataManager.data.writeEEPROM(true);
             }
         }
 
@@ -349,6 +350,7 @@ class WebHandler
             }
             else
                 response = SF("Update Success");
+            DEBUGLOG("WebHandler", response.c_str());
 
             server.client().setNoDelay(true);
             response = SF("<META http-equiv=\"refresh\" content=\"15;URL=/\">") + response + SF("! Rebooting...\n");
@@ -359,7 +361,7 @@ class WebHandler
         }
         else
         {
-            // TODO: save settings (it'll break minute buffer saving, so save it too)
+            DataManager.data.writeEEPROM(true);
             server.sendHeader("Location", server.header("Referer"), true);
             server.send(302, "text/plain", "");
         }
@@ -425,7 +427,7 @@ class WebHandler
         digitalWrite(ledPin, HIGH);
     }
 
-    void handleRaw()
+    void handleRaw() const
     {
         digitalWrite(ledPin, LOW);
 
@@ -436,7 +438,7 @@ class WebHandler
         uint32_t values[TARIFFS_COUNT];
 
         int month = dt.Month;
-        if (dt.Day < DataManager.settings.billDay)
+        if (dt.Day < DataManager.data.settings.billDay)
             month--;
         if (month < 1)
             month += 12;
@@ -451,28 +453,27 @@ class WebHandler
         result += SF(" (millis: ") + String(millis()) + SF(")");
         result += SF("<br/>\n");
 
-        result += SF("LastDistrDay: ") + String(DataManager.settings.lastDistributeDay) + SF(", ");
+        result += SF("LastDistrDay: ") + String(DataManager.data.lastDistributeDay) + SF(", ");
         result += SF("Tariffs: ");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
-            result += String(DataManager.settings.tariffStartHours[t]);
-            result += SF(" (") + String(DataManager.settings.tariffPrices[t]) + SF("), ");
+            result += String(DataManager.data.settings.tariffStartHours[t]);
+            result += SF(" (") + String(DataManager.data.settings.tariffPrices[t]) + SF("), ");
         }
-        result += SF("BillDay: ") + String(DataManager.settings.billDay) + SF(", ");
-        result += SF("CurrSymbols: '") + String(DataManager.settings.currencySymbols) + SF("', ");
+        result += SF("BillDay: ") + String(DataManager.data.settings.billDay) + SF(", ");
+        result += SF("CurrSymbols: '") + String(DataManager.data.settings.currencySymbols) + SF("', ");
         result += SF("Monitors: ");
         for (int m = 0; m < MONITORS_COUNT; m++)
-            result += String(DataManager.settings.monitorsNames[m]) + SF("; ");
-        result += SF("Password: ") + String(DataManager.settings.password) + SF(", ");
-        result += SF("Coefficient: ") + String(DataManager.settings.coefficient) + SF(", ");
-        result += SF("WiFi SSID: '") + String(DataManager.settings.wifi_ssid) + SF("', ");
-        result += SF("WiFi Passphrase: '") + String(DataManager.settings.wifi_passphrase) + SF("', ");
-        result += SF("WiFi IP: ") + String(IPAddress(DataManager.settings.wifi_ip).toString()) + SF(", ");
-        result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.settings.wifi_gateway).toString()) + SF(", ");
-        result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.settings.wifi_subnet).toString()) + SF(", ");
-        result += SF("WiFi DNS: ") + String(IPAddress(DataManager.settings.wifi_dns).toString()) + SF(", ");
-        result += SF("Settings size: ") + String(sizeof(DataManager.settings)) + " + " + String(60 * MONITORS_COUNT * sizeof(uint32_t));
-        result += SF(" = ") + String(sizeof(DataManager.settings) + 60 * MONITORS_COUNT * sizeof(uint32_t));
+            result += String(DataManager.data.settings.monitorsNames[m]) + SF("; ");
+        result += SF("Password: ") + String(DataManager.data.settings.password) + SF(", ");
+        result += SF("Coefficient: ") + String(DataManager.data.settings.coefficient) + SF(", ");
+        result += SF("WiFi SSID: '") + String(DataManager.data.settings.wifi_ssid) + SF("', ");
+        result += SF("WiFi Passphrase: '") + String(DataManager.data.settings.wifi_passphrase) + SF("', ");
+        result += SF("WiFi IP: ") + String(IPAddress(DataManager.data.settings.wifi_ip).toString()) + SF(", ");
+        result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF(", ");
+        result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF(", ");
+        result += SF("WiFi DNS: ") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF(", ");
+        result += SF("Data size: ") + String(sizeof(DataManager.data));
         result += SF("<br/>\n");
 
         result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
@@ -508,7 +509,7 @@ class WebHandler
             {
                 result += SF("<td>");
                 if (i != dt.Hour)
-                    result += toString(DataManager.settings.hours[i][m]) + SF(" ");
+                    result += toString(DataManager.data.hours[i][m]) + SF(" ");
                 else
                 {
                     result += SF("<font color='red'>");
@@ -539,7 +540,7 @@ class WebHandler
                 {
                     result += SF("<td>");
                     if (i != dt.Day - 1)
-                        result += toString(DataManager.settings.days[i][t][m]) + SF(" ");
+                        result += toString(DataManager.data.days[i][t][m]) + SF(" ");
                     else
                     {
                         result += SF("<font color='red'>");
@@ -571,7 +572,7 @@ class WebHandler
                 {
                     result += SF("<td>");
                     if (i != month - 1)
-                        result += toString(DataManager.settings.months[i][t][m]) + SF(" ");
+                        result += toString(DataManager.data.months[i][t][m]) + SF(" ");
                     else
                     {
                         result += SF("<font color='red'>");
@@ -590,7 +591,7 @@ class WebHandler
         digitalWrite(2, HIGH);
     }
 
-    inline String toString(const uint32_t &value)
+    inline String toString(const uint32_t &value) const
     {
         String str = "";
         if (value > 1000 * 100)
@@ -608,7 +609,7 @@ class WebHandler
         return str;
     }
 
-    void handleRawData()
+    void handleRawData() const
     {
         digitalWrite(ledPin, LOW);
 
@@ -631,8 +632,9 @@ class WebHandler
         digitalWrite(ledPin, HIGH);
     }
 
-    void handleRestart()
+    void handleRestart() const
     {
+        DEBUGLOG("WebHandler", "Restart");
         server.client().setNoDelay(true);
         server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));
         delay(100);

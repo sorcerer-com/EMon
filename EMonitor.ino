@@ -1,19 +1,18 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-//#include <ESP8266HTTPUpdateServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
-#include <ArduinoOTA.h>
 #include <FS.h>
 
-#include "Settings.h"
+// TODO:
+#define REMOTE_DEBUG
+#include "src/RemoteDebugger.h"
 #include "DataManager.h"
 #include "WebHandler.h"
-// TODO:
-#include "ESP8266HTTPUpdateServer2.h"
 
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer2 httpUpdater;
+ESP8266HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
 // TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password
@@ -21,6 +20,7 @@ WebHandler webHandler(server);
 // TODO: login password
 // TODO: maybe define real monitors count
 // TODO: WiFi.hostname("emon.local"); / MDNS.begin("emon")
+// TODO: maybe import/export data -> csv (from data.js)
 void setup()
 {
   Serial.begin(9600);
@@ -45,8 +45,6 @@ void setup()
 
   DataManager.setup();
 
-  ArduinoOTA.begin();
-
   httpUpdater.setup(&server);
 
   //ask server to track these headers
@@ -56,17 +54,18 @@ void setup()
   server.begin();
 
   SPIFFS.begin();
+
+#ifdef REMOTE_DEBUG
+  RemoteDebugger.begin(server);
+#endif
 }
 
 void loop()
 {
-  // TODO: profile how much time each take:
   DataManager.update();
 
-  ArduinoOTA.handle();
   server.handleClient();
 
-  // TODO: maybe do it on some time (not every time)
   if (wifiMulti.run() != WL_CONNECTED)
   {
     Serial.println("Re-connecting...");

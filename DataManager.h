@@ -3,12 +3,10 @@
 
 #include <EEPROM.h>
 
-#include "Settings.h"
+#include "Data.h"
 #include "src/NTPClient.h"
 #include "src/ADS1015.h"
 #include "src/EnergyMonitor.h"
-
-extern "C" uint32_t _SPIFFS_end;
 
 class DataManagerClass
 {
@@ -22,10 +20,8 @@ class DataManagerClass
     EnergyMonitor monitor3;
     EnergyMonitor monitor4;
 
-    uint32_t dataBuffer[MONITORS_COUNT][60]; // data for the last hour (per minute)
-
   public:
-    Settings settings;
+    Data data;
 
     DataManagerClass() : monitor1(ads, 0), monitor2(ads, 1), monitor3(ads, 2), monitor4(ads, 3)
     {
@@ -36,13 +32,7 @@ class DataManagerClass
     void setup()
     {
         EEPROM.begin(4096);
-        readEEPROM(settings);
-
-        // read data buffer from the end of the EEPROM
-        uint32_t EEPROM_end = ((uint32_t)&_SPIFFS_end - 0x40200000) + SPI_FLASH_SEC_SIZE;
-        noInterrupts();
-        spi_flash_read(EEPROM_end - sizeof(dataBuffer) - 1, (uint32_t *)dataBuffer, sizeof(dataBuffer));
-        interrupts();
+        data.readEEPROM();
 
         // retry 5 times to get the time, else try every minute on update
         for (int i = 0; i < 5; i++)
@@ -93,20 +83,19 @@ class DataManagerClass
                     uint32_t sum = 0;
                     for (int i = 0; i < 60; i++)
                     {
-                        if (dataBuffer[m][i] != 0xFFFFFFFF)
-                            sum += dataBuffer[m][i];
+                        if (data.minutesBuffer[m][i] != 0xFFFFFFFF)
+                            sum += data.minutesBuffer[m][i];
                     }
-                    settings.hours[prevHour][m] = sum * settings.coefficient;
+                    data.hours[prevHour][m] = sum * data.settings.coefficient;
 
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
-                             prevHour, m, settings.hours[prevHour][m]);
+                             prevHour, m, data.hours[prevHour][m]);
                 }
-                writeEEPROM(settings);
-                memset(dataBuffer, 0xFF, sizeof(dataBuffer));
+                data.writeEEPROM();
             }
 
             for (int m = 0; m < MONITORS_COUNT; m++)
-                writeToDataBuffer(m, dt.Minute, getMonitor(m).getEnergy());
+                data.writeToMinutesBuffer(m, dt.Minute, getMonitor(m).getEnergy());
         }
     }
 
@@ -126,8 +115,8 @@ class DataManagerClass
         uint32_t sum = 0;
         for (int i = 0; i < 60; i++)
         {
-            if (dataBuffer[monitorIdx][i] != 0xFFFFFFFF)
-                sum += dataBuffer[monitorIdx][i];
+            if (data.minutesBuffer[monitorIdx][i] != 0xFFFFFFFF)
+                sum += data.minutesBuffer[monitorIdx][i];
         }
         return sum + getMonitor(monitorIdx).getEnergy(false);
     }
@@ -142,15 +131,15 @@ class DataManagerClass
         for (int h = 0; h <= dt.Hour; h++)
         {
             if (h != dt.Hour)
-                value = settings.hours[h][monitorIdx];
+                value = data.hours[h][monitorIdx];
             else
                 value = getCurrentHourEnergy(monitorIdx);
 
-            if (h >= settings.tariffStartHours[0] && h < settings.tariffStartHours[1])
+            if (h >= data.settings.tariffStartHours[0] && h < data.settings.tariffStartHours[1])
                 values[0] += value;
-            else if (h >= settings.tariffStartHours[1] && h < settings.tariffStartHours[2])
+            else if (h >= data.settings.tariffStartHours[1] && h < data.settings.tariffStartHours[2])
                 values[1] += value;
-            else if (h >= settings.tariffStartHours[2] || h < settings.tariffStartHours[0])
+            else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
                 values[2] += value;
         }
     }
@@ -175,11 +164,11 @@ class DataManagerClass
             values[t] = 0;
             for (int d = 0; d < daysCount; d++)
             {
-                if ((dt.Day >= settings.billDay && d + 1 >= settings.billDay && d + 1 <= dt.Day) ||
-                    (dt.Day < settings.billDay && (d + 1 >= settings.billDay || d + 1 <= dt.Day)))
+                if ((dt.Day >= data.settings.billDay && d + 1 >= data.settings.billDay && d + 1 <= dt.Day) ||
+                    (dt.Day < data.settings.billDay && (d + 1 >= data.settings.billDay || d + 1 <= dt.Day)))
                 {
                     if (d != dt.Day - 1)
-                        values[t] += settings.days[d][t][monitorIdx];
+                        values[t] += data.days[d][t][monitorIdx];
                     else
                         values[t] += currentDay[t];
                 }
@@ -187,17 +176,17 @@ class DataManagerClass
         }
     }
 
-    inline date_time getCurrentTime()
+    inline date_time getCurrentTime() const
     {
-        return breakTime(startTime + settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
+        return breakTime(startTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
     }
 
   private:
     void distributeData(const date_time &dt)
     {
-        if (dt.Day == settings.lastDistributeDay || dt.Hour == 0) // if not the first update for the new day
+        if (dt.Day == data.lastDistributeDay || dt.Hour == 0) // if not the first update for the new day
             return;
-        settings.lastDistributeDay = dt.Day;
+        data.lastDistributeDay = dt.Day;
 
         int year = dt.Year;
         int prevMonth = dt.Month - 1;
@@ -211,7 +200,7 @@ class DataManagerClass
         if (prevDay == 0)
             prevDay += daysCount;
         // TODO: if billDay is 31, but the month is to 30(or 28)
-        if (dt.Day == settings.billDay) // the data for the month is full
+        if (dt.Day == data.settings.billDay) // the data for the month is full
         {
             for (int i = 0; i < MONITORS_COUNT; i++)
             {
@@ -220,12 +209,12 @@ class DataManagerClass
                     uint32_t sum = 0;
                     for (int d = 0; d < daysCount; d++)
                     {
-                        sum += settings.days[d][t][i];
+                        sum += data.days[d][t][i];
                     }
-                    settings.months[prevMonth - 1][t][i] = sum;
+                    data.months[prevMonth - 1][t][i] = sum;
 
                     DEBUGLOG("DataManager", "Consumption for %d month (%d tariff) monitor %d: %d",
-                             prevMonth, t, i, settings.months[prevMonth - 1][t][i]);
+                             prevMonth, t, i, data.months[prevMonth - 1][t][i]);
                 }
             }
         }
@@ -235,23 +224,23 @@ class DataManagerClass
             uint32_t sum[3] = {0, 0, 0};
             for (int h = 0; h < 24; h++)
             {
-                if (h >= settings.tariffStartHours[0] && h < settings.tariffStartHours[1])
-                    sum[0] += settings.hours[h][i];
-                else if (h >= settings.tariffStartHours[1] && h < settings.tariffStartHours[2])
-                    sum[1] += settings.hours[h][i];
-                else if (h >= settings.tariffStartHours[2] || h < settings.tariffStartHours[0])
-                    sum[2] += settings.hours[h][i];
+                if (h >= data.settings.tariffStartHours[0] && h < data.settings.tariffStartHours[1])
+                    sum[0] += data.hours[h][i];
+                else if (h >= data.settings.tariffStartHours[1] && h < data.settings.tariffStartHours[2])
+                    sum[1] += data.hours[h][i];
+                else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
+                    sum[2] += data.hours[h][i];
             }
-            settings.days[prevDay - 1][0][i] = sum[0];
-            settings.days[prevDay - 1][1][i] = sum[1];
-            settings.days[prevDay - 1][2][i] = sum[2];
+            data.days[prevDay - 1][0][i] = sum[0];
+            data.days[prevDay - 1][1][i] = sum[1];
+            data.days[prevDay - 1][2][i] = sum[2];
 
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, settings.days[prevDay - 1][0][i]);
+                     prevDay, i, data.days[prevDay - 1][0][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, settings.days[prevDay - 1][1][i]);
+                     prevDay, i, data.days[prevDay - 1][1][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, settings.days[prevDay - 1][2][i]);
+                     prevDay, i, data.days[prevDay - 1][2][i]);
         }
     }
 
@@ -268,20 +257,6 @@ class DataManagerClass
         case 3:
             return monitor4;
         }
-    }
-
-    inline bool writeToDataBuffer(const int &monitorIdx, const int &valueIdx, uint32_t value)
-    {
-        if (monitorIdx < 0 || monitorIdx >= MONITORS_COUNT ||
-            valueIdx < 0 || valueIdx >= 60)
-            return false;
-
-        dataBuffer[monitorIdx][valueIdx] = value;
-
-        // write only this value to EEPROM
-        uint32_t EEPROM_end = ((uint32_t)&_SPIFFS_end - 0x40200000) + SPI_FLASH_SEC_SIZE;
-        int idx = monitorIdx * 60 + valueIdx;
-        return spi_flash_write(EEPROM_end - sizeof(dataBuffer) - 1 + idx * sizeof(value), &value, sizeof(value)) == SPI_FLASH_RESULT_OK;
     }
 };
 
