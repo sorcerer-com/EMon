@@ -56,12 +56,13 @@ class EnergyMonitor
         uint32_t delta = millis() - timer;
         // power / ((3600 * 1000) / avgDelta)
         uint64_t energy = power * delta / counter / 3600;
-        DEBUGLOG("EnergyMonitor", "Channel: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
-                 channel, (uint32_t)power, delta, counter, (uint32_t)energy);
         energy = round(energy / (float)10);
 
         if (clear)
         {
+            DEBUGLOG("EnergyMonitor", "Channel: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
+                     channel, (uint32_t)power, delta, counter, (uint32_t)energy);
+
             timer = millis();
             counter = 0;
             power = 0;

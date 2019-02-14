@@ -38,7 +38,7 @@ class RemoteDebuggerClass : public StreamString
         if (maxSize != 0)
             m_maxSize = maxSize;
         else
-            m_maxSize = ESP.getFreeHeap() / 2;
+            m_maxSize = ESP.getFreeHeap() / 3;
 
         server.on("/debug", [&]() {
             String result = F("<META http-equiv=\"refresh\" content=\"5;URL=/debug\">\n");
@@ -53,10 +53,11 @@ class RemoteDebuggerClass : public StreamString
 
     void clean()
     {
-        // while above 90%
-        while (length() > m_maxSize * 9 / 10)
+        // if above 90%
+        if (length() > m_maxSize * 9 / 10)
         {
-            String temp = substring(indexOf('\n') + 1);
+            // remove at least the half string
+            String temp = substring(indexOf('\n', length() / 2) + 1);
             copy(temp.c_str(), temp.length());
         }
     }

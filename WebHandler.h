@@ -254,6 +254,7 @@ class WebHandler
     {
         digitalWrite(ledPin, LOW);
 
+        bool restart = false;
         int listParamIdx = 0;
         for (int i = 0; i < server.args(); i++)
         {
@@ -292,42 +293,49 @@ class WebHandler
             else if (name == "coefficient")
                 DataManager.data.settings.coefficient = value.toFloat();
             // WiFi settings
-            // TODO: restart when wifi settings changed
             else if (name == "wifi_ssid")
+            {
+                if (strcmp(DataManager.data.settings.wifi_ssid, value.c_str()) != 0)
+                    restart = true;
                 strcpy(DataManager.data.settings.wifi_ssid, value.c_str());
+            }
             else if (name == "wifi_passphrase")
+            {
+                if (strcmp(DataManager.data.settings.wifi_passphrase, value.c_str()) != 0)
+                    restart = true;
                 strcpy(DataManager.data.settings.wifi_passphrase, value.c_str());
+            }
             else if (name == "wifi_ip")
             {
-                IPAddress ip;
-                if (value != "" && ip.fromString(value))
-                    DataManager.data.settings.wifi_ip = ip;
-                else
-                    DataManager.data.settings.wifi_ip = 0;
+                IPAddress ip = 0;
+                ip.fromString(value);
+                if (DataManager.data.settings.wifi_ip != ip)
+                    restart = true;
+                DataManager.data.settings.wifi_ip = ip;
             }
             else if (name == "wifi_gateway")
             {
-                IPAddress ip;
-                if (value != "" && ip.fromString(value))
-                    DataManager.data.settings.wifi_gateway = ip;
-                else
-                    DataManager.data.settings.wifi_gateway = 0;
+                IPAddress ip = 0;
+                ip.fromString(value);
+                if (DataManager.data.settings.wifi_gateway != ip)
+                    restart = true;
+                DataManager.data.settings.wifi_gateway = ip;
             }
             else if (name == "wifi_subnet")
             {
-                IPAddress ip;
-                if (value != "" && ip.fromString(value))
-                    DataManager.data.settings.wifi_subnet = ip;
-                else
-                    DataManager.data.settings.wifi_subnet = 0;
+                IPAddress ip = 0;
+                ip.fromString(value);
+                if (DataManager.data.settings.wifi_subnet != ip)
+                    restart = true;
+                DataManager.data.settings.wifi_subnet = ip;
             }
             else if (name == "wifi_dns")
             {
-                IPAddress ip;
-                if (value != "" && ip.fromString(value))
-                    DataManager.data.settings.wifi_dns = ip;
-                else
-                    DataManager.data.settings.wifi_dns = 0;
+                IPAddress ip = 0;
+                ip.fromString(value);
+                if (DataManager.data.settings.wifi_dns != ip)
+                    restart = true;
+                DataManager.data.settings.wifi_dns = ip;
             }
             // reset
             else if (name == "factory_reset")
@@ -364,6 +372,9 @@ class WebHandler
             DataManager.data.writeEEPROM(true);
             server.sendHeader("Location", server.header("Referer"), true);
             server.send(302, "text/plain", "");
+
+            if (restart)
+                ESP.restart();
         }
 
         digitalWrite(ledPin, HIGH);
@@ -443,9 +454,10 @@ class WebHandler
         if (month < 1)
             month += 12;
 
-        String result = SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI());
+        String result = SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
+        result += SF("WiFi AP: ") + WiFi.softAPSSID() + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum()) + SF("; ");
+        result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA"))));
         result += SF("<br/>\n");
-        // TODO: maybe add AP info too
 
         result += "Local Time: ";
         result += String(dt.Hour) + SF(":") + String(dt.Minute) + SF(":") + String(dt.Second) + SF(" ") +
