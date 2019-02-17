@@ -2,6 +2,7 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 #include <FS.h>
 
 // TODO:
@@ -17,14 +18,13 @@ WebHandler webHandler(server);
 
 // TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password
 // TODO: WiFi settings - ssid, pass, static ip, gateway, subnet, dns
-// TODO: login password
 // TODO: maybe define real monitors count
-// TODO: WiFi.hostname("emon.local"); / MDNS.begin("emon")
 // TODO: maybe import/export data -> csv (from data.js)
 void setup()
 {
   Serial.begin(9600);
 
+  WiFi.hostname("EnergyMonitor");
   WiFi.mode(WIFI_STA);
   //WiFi.mode(WIFI_AP_STA);
   //String ssid = SF("EnergyMonitor_") + String(ESP.getChipId(), HEX);
@@ -43,12 +43,18 @@ void setup()
   Serial.println(WiFi.localIP().toString());
   Serial.println();
 
+  if (MDNS.begin("emon"))
+  {
+    Serial.println("MDNS responder started");
+    MDNS.addService("http", "tcp", 80);
+  }
+
   DataManager.setup();
 
-  httpUpdater.setup(&server);
+  httpUpdater.setup(&server, "admin", "admin");
 
   //ask server to track these headers
-  const char *headerkeys[] = {"Referer"};
+  const char *headerkeys[] = {"Referer", "Cookie"};
   size_t headerkeyssize = sizeof(headerkeys) / sizeof(char *);
   server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
@@ -64,6 +70,7 @@ void loop()
 {
   DataManager.update();
 
+  MDNS.update();
   server.handleClient();
 
   if (wifiMulti.run() != WL_CONNECTED)

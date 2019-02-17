@@ -4,6 +4,7 @@
 #include <ESP8266WebServer.h>
 #include <FS.h>
 #include <StreamString.h>
+#include <Hash.h>
 
 class WebHandler
 {
@@ -21,6 +22,8 @@ class WebHandler
   private:
     void setup()
     {
+        server.on("/login", HTTP_GET, [&]() { handleLogin(HTTP_GET); });
+        server.on("/login", HTTP_POST, [&]() { handleLogin(HTTP_POST); });
         server.on("/data.js", [&]() { handleDataFile(); });
         server.on("/settings", HTTP_POST, [&]() { handleSettings(); }, [&]() { handleUpdate(); });
         server.on("/raw", [&]() { handleRaw(); });
@@ -35,8 +38,62 @@ class WebHandler
         });
     }
 
+    void handleLogin(const HTTPMethod &method) const
+    {
+        if (method == HTTP_GET)
+        {
+            if (authenticate(false))
+                server.send(200, "text/html", "");
+            else
+                server.send(401, "text/html", "");
+        }
+        else if (method == HTTP_POST)
+        {
+            if (server.arg("password") == DataManager.data.settings.password)
+            {
+                DEBUGLOG("WebHandler", "Login");
+                // set cookie with hash of remoteIp and password with max age 20 min
+                String hash = sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+                server.sendHeader("Set-Cookie", hash + ";Max-Age=1200;path=/");
+
+                server.sendHeader("Location", server.arg("redirect"), true);
+                server.send(302, "text/plain", "");
+            }
+            else
+            {
+                DEBUGLOG("WebHandler", "Wrong password");
+                server.sendHeader("Set-Cookie", "login fail;Max-Age=3;path=/");
+                server.sendHeader("Location", "/", true);
+                server.send(302, "text/plain", "");
+            }
+        }
+    }
+
+    bool authenticate(const bool &redirect = true) const
+    {
+        if (strcmp(DataManager.data.settings.password, "") == 0) // empty password
+            return true;
+
+        bool res = false;
+        if (server.hasHeader("Cookie"))
+        {
+            String hash = sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+            res = (server.header("Cookie") == hash);
+        }
+
+        if (!res && redirect)
+        {
+            server.sendHeader("Location", "/", true);
+            server.send(302, "text/plain", "");
+        }
+        return res;
+    }
+
     void handleDataFile() const
     {
+        if (!authenticate())
+            return;
+
         digitalWrite(ledPin, LOW);
 
         DEBUGLOG("WebHandler", "Generating data.js");
@@ -180,6 +237,10 @@ class WebHandler
         DEBUGLOG("WebHandler", "HandleFileRead: %s", path.c_str());
         if (path.endsWith("/"))
             path += "index.html";
+        // if not authenticated and it's html file and it's not index.html
+        if (path.endsWith(".html") && !path.endsWith("index.html") &&
+            !authenticate())
+            return true;
         String contentType = getContentType(path);
         String pathWithGz = path + ".gz";
         if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path))
@@ -252,6 +313,9 @@ class WebHandler
 
     void handleSettings()
     {
+        if (!authenticate())
+            return;
+
         digitalWrite(ledPin, LOW);
 
         bool restart = false;
@@ -309,7 +373,7 @@ class WebHandler
             {
                 IPAddress ip = 0;
                 ip.fromString(value);
-                if (DataManager.data.settings.wifi_ip != ip)
+                if (DataManager.data.settings.wifi_ip != (uint32_t)ip)
                     restart = true;
                 DataManager.data.settings.wifi_ip = ip;
             }
@@ -317,7 +381,7 @@ class WebHandler
             {
                 IPAddress ip = 0;
                 ip.fromString(value);
-                if (DataManager.data.settings.wifi_gateway != ip)
+                if (DataManager.data.settings.wifi_gateway != (uint32_t)ip)
                     restart = true;
                 DataManager.data.settings.wifi_gateway = ip;
             }
@@ -325,7 +389,7 @@ class WebHandler
             {
                 IPAddress ip = 0;
                 ip.fromString(value);
-                if (DataManager.data.settings.wifi_subnet != ip)
+                if (DataManager.data.settings.wifi_subnet != (uint32_t)ip)
                     restart = true;
                 DataManager.data.settings.wifi_subnet = ip;
             }
@@ -333,7 +397,7 @@ class WebHandler
             {
                 IPAddress ip = 0;
                 ip.fromString(value);
-                if (DataManager.data.settings.wifi_dns != ip)
+                if (DataManager.data.settings.wifi_dns != (uint32_t)ip)
                     restart = true;
                 DataManager.data.settings.wifi_dns = ip;
             }
@@ -370,11 +434,19 @@ class WebHandler
         else
         {
             DataManager.data.writeEEPROM(true);
-            server.sendHeader("Location", server.header("Referer"), true);
-            server.send(302, "text/plain", "");
-
             if (restart)
+            {
+                server.client().setNoDelay(true);
+                server.send(200, "text/html", SF("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));
+                delay(100);
+                server.client().stop();
                 ESP.restart();
+            }
+            else
+            {
+                server.sendHeader("Location", server.header("Referer"), true);
+                server.send(302, "text/plain", "");
+            }
         }
 
         digitalWrite(ledPin, HIGH);
@@ -382,6 +454,9 @@ class WebHandler
 
     void handleUpdate()
     {
+        if (!authenticate())
+            return;
+
         digitalWrite(ledPin, LOW);
         // from ESP8266HTTPUpdateServer
         // handler for the file upload, get's the sketch bytes, and writes
@@ -405,7 +480,7 @@ class WebHandler
         }
         else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
         {
-            DEBUGLOG("WebHandler", ".");
+            DEBUGLOG("WebHandler", "Processing");
             if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
             {
 #ifdef DEBUG
@@ -417,7 +492,7 @@ class WebHandler
         {
             if (Update.end(true)) //true to set the size to the current progress
             {
-                DEBUGLOG("WebHandler", "Update Success: %u\nRebooting...\n", upload.totalSize);
+                DEBUGLOG("WebHandler", "Update Success: %u", upload.totalSize);
             }
             else
             {
@@ -425,13 +500,15 @@ class WebHandler
                 Update.printError(Serial);
 #endif
             }
-            updated = true;
+            if (upload.totalSize > 0)
+                updated = true;
         }
         else if (upload.status == UPLOAD_FILE_ABORTED)
         {
             Update.end();
             DEBUGLOG("WebHandler", "Update was aborted");
-            updated = true;
+            if (upload.totalSize > 0)
+                updated = true;
         }
         delay(0);
 
@@ -440,6 +517,9 @@ class WebHandler
 
     void handleRaw() const
     {
+        if (!authenticate())
+            return;
+
         digitalWrite(ledPin, LOW);
 
         FSInfo fs_info;
@@ -623,6 +703,9 @@ class WebHandler
 
     void handleRawData() const
     {
+        if (!authenticate())
+            return;
+
         digitalWrite(ledPin, LOW);
 
         String result = "[";
@@ -646,6 +729,9 @@ class WebHandler
 
     void handleRestart() const
     {
+        if (!authenticate())
+            return;
+
         DEBUGLOG("WebHandler", "Restart");
         server.client().setNoDelay(true);
         server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));

@@ -298,7 +298,7 @@ function drawVerticalSplitBarChart(canvasName, labels, values, options) {
 	var barHeight = Math.floor(gridHeight / maxCount);
 	var blankSpaceHeight = Math.floor(barHeight / 4);
 
-	var max = Math.max.apply(Math, sum);
+	var max = Math.max(Math.max.apply(Math, sum), 1);
 	var coef = gridWidth / max;
 
 	ctx.font = options.font;

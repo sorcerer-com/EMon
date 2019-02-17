@@ -2,23 +2,62 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-	<title>Electicity Home System</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link rel="icon" href="favicon.ico" type="image/x-icon">
+	
+	<title>Energy Monitor</title>
+	
+	<!-- JQuery -->
+	<script src="res/jquery-3.3.1.min.js"></script>
+
+	<!-- CSS -->
+	<link rel="stylesheet" type="text/css" href="d/style.css">
 
 	<script>
-		var windowWidth = window.screen.width < window.outerWidth ?
-			window.screen.width : window.outerWidth;
+		$(function() {
+			var redirect;
+			var windowWidth = window.screen.width < window.outerWidth ?
+				window.screen.width : window.outerWidth;
 
-		if (windowWidth < 700) {
-			// mobile
-			window.location.replace("m/consumption.html");
-		}
-		else {
-			// desktop
-			window.location.replace("d/consumption.html");
-		}
+			if (windowWidth < 700) {
+				// mobile
+				redirect = "m/consumption.html";
+			}
+			else {
+				// desktop
+				redirect = "d/consumption.html";
+			}
+			$("input[name=redirect]").val(redirect);
+			$(".pages").hide();
+			
+			$.get("/login", function(data, status, xhr) {
+				if (xhr.status == 200) {
+					window.location.replace(redirect);
+				}		
+			}).fail(function() {
+				$(".pages").show();
+			});
+			
+			if (document.cookie == "login fail") {
+				$(".section-settings").append("<p style='color:red'>Incorrect password</p>");
+			}
+		});
 	</script>
 </head>
 
-<body></body>
+<body>
+	<div class="pages">
+		<section class="section-settings">
+			<p class="section-title">Login</p>
+			<form id="wifi_settings" action="/login" method="post">
+				<p>Password:</p>
+				<input type="password" name="password" maxlength="10"/>
+				<input type="hidden" name="redirect"/>
+				<input type="submit" value="LogIn">
+			</form>
+		</section>
+	</div>
+</body>
 
 </html>
