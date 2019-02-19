@@ -27,13 +27,13 @@ class DataManagerClass
     {
         startTime = 0;
         timer = 0;
+
+        EEPROM.begin(4096);
+        data.readEEPROM();
     }
 
     void setup()
     {
-        EEPROM.begin(4096);
-        data.readEEPROM();
-
         // retry 5 times to get the time, else try every minute on update
         for (int i = 0; i < 5; i++)
         {

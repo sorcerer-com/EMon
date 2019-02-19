@@ -16,42 +16,55 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
-// TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password
-// TODO: WiFi settings - ssid, pass, static ip, gateway, subnet, dns
+unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
+
+// TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password?
 // TODO: maybe define real monitors count
 // TODO: maybe import/export data -> csv (from data.js)
 void setup()
 {
   Serial.begin(9600);
+#ifdef REMOTE_DEBUG
+  RemoteDebugger.begin(server);
+#endif
 
-  WiFi.hostname("EnergyMonitor");
+  // setup WiFi
+  WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
-  //WiFi.mode(WIFI_AP_STA);
-  //String ssid = SF("EnergyMonitor_") + String(ESP.getChipId(), HEX);
-  //WiFi.softAP(ssid.c_str(), "12345678");
-  wifiMulti.addAP("m68", "bekonche");
-  wifiMulti.addAP("WL0242_2.4G_13A608", "bekonche");
+  WiFi.hostname("EnergyMonitor");
+  if (WiFi.config(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
+                  DataManager.data.settings.wifi_subnet, DataManager.data.settings.wifi_dns))
+  {
+    DEBUGLOG("EMonitor", "Config WiFi - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
+             IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
+             IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
+             IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
+             IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
+  }
+  else
+  {
+    DEBUGLOG("EMonitor", "Cannot config Wifi");
+  }
+
+  wifiMulti.addAP(DataManager.data.settings.wifi_ssid, DataManager.data.settings.wifi_passphrase);
 
   // Wait for connection
-  while (wifiMulti.run() != WL_CONNECTED)
+  DEBUGLOG("EMonitor", "Connecting...");
+  for (int i = 0; i < 10; i++)
   {
+    if (wifiMulti.run() == WL_CONNECTED)
+    {
+      DEBUGLOG("EMonitor", "WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+      break;
+    }
     delay(500);
-    Serial.print(".");
   }
-  Serial.print(WiFi.SSID());
-  Serial.print(" ");
-  Serial.println(WiFi.localIP().toString());
-  Serial.println();
 
   if (MDNS.begin("emon"))
   {
-    Serial.println("MDNS responder started");
+    DEBUGLOG("EMonitor", "MDNS responder started");
     MDNS.addService("http", "tcp", 80);
   }
-
-  DataManager.setup();
-
-  httpUpdater.setup(&server, "admin", "admin");
 
   //ask server to track these headers
   const char *headerkeys[] = {"Referer", "Cookie"};
@@ -59,11 +72,9 @@ void setup()
   server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
 
-  SPIFFS.begin();
+  httpUpdater.setup(&server, "admin", "admin");
 
-#ifdef REMOTE_DEBUG
-  RemoteDebugger.begin(server);
-#endif
+  DataManager.setup();
 }
 
 void loop()
@@ -73,12 +84,40 @@ void loop()
   MDNS.update();
   server.handleClient();
 
-  if (wifiMulti.run() != WL_CONNECTED)
+  if (millis() - reconnectTimer > 5 * MILLIS_IN_A_SECOND)
   {
-    Serial.println("Re-connecting...");
-    Serial.print(WiFi.SSID());
-    Serial.print(" ");
-    Serial.println(WiFi.localIP().toString());
-    Serial.println();
+    reconnectTimer = millis();
+    if (wifiMulti.run() != WL_CONNECTED)
+    {
+      if (WiFi.getMode() == WIFI_STA)
+      {
+        // 192.168.244.1
+        DEBUGLOG("EMonitor", "Fail to reconnect... create AP");
+        WiFi.mode(WIFI_AP_STA);
+        if (!WiFi.softAPConfig(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
+                              DataManager.data.settings.wifi_subnet))
+        {
+          DEBUGLOG("EMonitor", "Config WiFi AP - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
+                  IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
+                  IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
+                  IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
+                  IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
+        }
+        else
+        {
+          DEBUGLOG("EMonitor", "Cannot config Wifi AP");
+        }
+
+        String ssid = SF("EnergyMonitor_") + String(ESP.getChipId(), HEX);
+        WiFi.softAP(ssid.c_str(), "12345678");
+        DEBUGLOG("EMonitor", "AP WiFi: %s, IP: %s", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());
+      }
+    }
+    else if (WiFi.getMode() != WIFI_STA)
+    {
+      WiFi.mode(WIFI_STA);
+      DEBUGLOG("EMonitor", "Reconnected");
+      DEBUGLOG("EMonitor", "WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    }
   }
 }

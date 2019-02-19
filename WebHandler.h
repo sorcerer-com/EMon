@@ -22,6 +22,8 @@ class WebHandler
   private:
     void setup()
     {
+        SPIFFS.begin();
+
         server.on("/login", HTTP_GET, [&]() { handleLogin(HTTP_GET); });
         server.on("/login", HTTP_POST, [&]() { handleLogin(HTTP_POST); });
         server.on("/data.js", [&]() { handleDataFile(); });
@@ -534,9 +536,9 @@ class WebHandler
         if (month < 1)
             month += 12;
 
-        String result = SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
-        result += SF("WiFi AP: ") + WiFi.softAPSSID() + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum()) + SF("; ");
-        result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA"))));
+        String result = SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
+        result += SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
+        result += SF("WiFi AP: ") + WiFi.softAPSSID() + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum());
         result += SF("<br/>\n");
 
         result += "Local Time: ";
