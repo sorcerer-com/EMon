@@ -59,7 +59,6 @@ class DataManagerClass
         {
             timer = millis();
 
-            // TODO: maybe save startTime in eeprom - every hour and try to get
             // if time isn't received in the setup, try again every 5th second
             if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 5 == 0)
                 setStartTime(getTime());
@@ -67,8 +66,8 @@ class DataManagerClass
             date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
 
-            // if there is a start time and new hour begins
-            if (startTime != 0 && dt.Hour != data.lastSaveHour)
+            // if new hour begins
+            if (dt.Hour != data.lastSaveHour)
             {
                 data.lastSaveHour = dt.Hour;
                 distributeData(dt);
@@ -177,7 +176,8 @@ class DataManagerClass
 
     inline date_time getCurrentTime() const
     {
-        return breakTime(startTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
+        uint32_t sTime = startTime != 0 ? startTime : data.startTime;
+        return breakTime(sTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
     }
 
     inline bool setStartTime(const uint32_t &value)
@@ -187,6 +187,7 @@ class DataManagerClass
 
         startTime = value;
         startTime -= millis() / MILLIS_IN_A_SECOND;
+        data.startTime = startTime;
         return true;
     }
 

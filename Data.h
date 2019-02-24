@@ -26,6 +26,7 @@ class Data
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
+    uint32_t startTime = 0;
     uint8_t lastSaveHour = 0;
     uint8_t lastSaveDay = 0;
     uint8_t lastSaveMonth = 0;
@@ -69,6 +70,8 @@ class Data
         addr += sizeof(days);
         EEPROM.get(addr, hours);
         addr += sizeof(hours);
+        EEPROM.get(addr, startTime);
+        addr += sizeof(startTime);
         EEPROM.get(addr, lastSaveHour);
         addr += sizeof(lastSaveHour);
         EEPROM.get(addr, lastSaveDay);
@@ -89,9 +92,10 @@ class Data
         }
 
         // TODO: remove / how to set in the first place
-        //lastSaveHour = 22;
-        //lastSaveDay = 22;
-        //lastSaveMonth = 2;
+        startTime = 0;
+        lastSaveHour = 21;
+        lastSaveDay = 24;
+        lastSaveMonth = 2;
         settings.timeZone = 2;
         settings.tariffStartHours[0] = 7;
         settings.tariffStartHours[1] = 23;
@@ -130,6 +134,8 @@ class Data
         addr += sizeof(days);
         EEPROM.put(addr, hours);
         addr += sizeof(hours);
+        EEPROM.put(addr, startTime);
+        addr += sizeof(startTime);
         EEPROM.put(addr, lastSaveHour);
         addr += sizeof(lastSaveHour);
         EEPROM.put(addr, lastSaveDay);
@@ -163,6 +169,7 @@ class Data
         memset(months, 0, sizeof(months));
         memset(days, 0, sizeof(days));
         memset(hours, 0, sizeof(hours));
+        startTime = 0;
         lastSaveHour = 0;
         lastSaveDay = 0;
         lastSaveMonth = 0;

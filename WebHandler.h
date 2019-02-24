@@ -108,6 +108,7 @@ class WebHandler
 
         date_time dt = DataManager.getCurrentTime();
         result += SF("data.time = '") + dateTimeToString(dt, true) + SF("';\n");
+        result += SF("data.startTime = ") + String(DataManager.data.startTime) + SF(";\n");
         result += SF("\n");
 
         result += SF("data.settings = {};\n");
@@ -532,6 +533,7 @@ class WebHandler
         result += SF(" (millis: ") + String(millis()) + SF(")");
         result += SF("<br/>\n");
 
+        result += SF("StartTime: ") + String(DataManager.data.startTime) + SF(", ");
         result += SF("LastSaveHour: ") + String(DataManager.data.lastSaveHour) + SF(", ");
         result += SF("LastSaveDay: ") + String(DataManager.data.lastSaveDay) + SF(", ");
         result += SF("LastSaveMonth: ") + String(DataManager.data.lastSaveMonth) + SF(", ");
