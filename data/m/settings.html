@@ -57,6 +57,10 @@
 					}
 				}
 			}
+			var date = new Date(data.time);
+			date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+			$("#time").append(date.toLocaleString());
+			
 			// refresh data next time
 			sessionStorage.removeItem("data");
 		});
@@ -141,6 +145,12 @@
 					<p>Update UI:</p>
 					<input type="file" name="update_spiffs" accept=".image">
 					<input type="submit" value="Save">
+				</form>
+				<hr/>
+				<form id="update_time" action="/settings" method="post">
+					<p id="time">Time of refresh: </p>
+					<input type="hidden" name="time" value="">
+					<input type="submit" value="Update time" onclick="$(`input[name='time']`)[0].value = Math.floor(new Date().getTime() / 1000)">
 				</form>
 				<hr/>
 				<form id="factory_reset" action="/settings" method="post">

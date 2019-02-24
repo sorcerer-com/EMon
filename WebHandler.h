@@ -384,6 +384,11 @@ class WebHandler
                     restart = true;
                 DataManager.data.settings.wifi_dns = ip;
             }
+            // update time
+            else if (name == "time")
+            {
+                DataManager.setStartTime(value.toInt());
+            }
             // reset
             else if (name == "factory_reset")
             {
