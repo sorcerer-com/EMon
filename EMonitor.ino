@@ -18,6 +18,7 @@ WebHandler webHandler(server);
 
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
 
+// TODO: print readme
 // TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password?
 // TODO: maybe define real monitors count
 // TODO: maybe import/export data -> csv (from data.js)
@@ -116,8 +117,7 @@ void loop()
     else if (WiFi.getMode() != WIFI_STA)
     {
       WiFi.mode(WIFI_STA);
-      DEBUGLOG("EMonitor", "Reconnected");
-      DEBUGLOG("EMonitor", "WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+      DEBUGLOG("EMonitor", "Reconnected WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     }
   }
 }

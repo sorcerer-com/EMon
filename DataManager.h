@@ -43,8 +43,7 @@ class DataManagerClass
         }
 
         date_time dt = getCurrentTime();
-        DEBUGLOG("DataManager", "Start time: %02d:%02d:%02d %02d/%02d/%04d",
-                 dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
+        DEBUGLOG("DataManager", "Start time: %s", dateTimeToString(dt).c_str());
         timer = millis() - dt.Second * MILLIS_IN_A_SECOND;
 
         ads.setGain(GAIN_ONE); // 1x gain   +/- 4.096V  1 bit = 2mV      0.125mV
@@ -60,24 +59,25 @@ class DataManagerClass
         {
             timer = millis();
 
-            // TODO: check (millis() / in_minute) % 5 == 0
             // TODO: maybe save startTime in eeprom - every hour and try to get
-            if (startTime == 0) // if time isn't getted in setup, try again
+            // TODO: maybe if there is no internet add way (in ui) to set the time too
+            // if time isn't received in the setup, try again every 5th second
+            if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 5 == 0)
                 startTime = getTime();
 
             date_time dt = getCurrentTime();
-            DEBUGLOG("DataManager", "Current time: %02d:%02d:%02d %02d/%02d/%04d",
-                     dt.Hour, dt.Minute, dt.Second, dt.Day, dt.Month, dt.Year);
+            DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
 
-            // TODO: if we missed the 0 minute - power down before 59 to 01 minute, lose data
-            // modify lastDistributeDay, to be Time and check that
-            if (dt.Minute == 0 && startTime != 0) // in the end of the minute and if there is start time
+            // if there is a start time and new hour begins
+            if (startTime != 0 && dt.Hour != data.lastSaveHour)
             {
+                data.lastSaveHour = dt.Hour;
                 distributeData(dt);
 
                 int prevHour = dt.Hour - 1;
                 if (prevHour < 0)
                     prevHour += 24;
+                DEBUGLOG("DataManager", "Save data for %d hour", prevHour);
                 for (int m = 0; m < MONITORS_COUNT; m++)
                 {
                     uint32_t sum = 0;
@@ -184,9 +184,9 @@ class DataManagerClass
   private:
     void distributeData(const date_time &dt)
     {
-        if (dt.Day == data.lastDistributeDay || dt.Hour == 0) // if not the first update for the new day
+        if (dt.Day == data.lastSaveDay || dt.Hour == 0) // if not the first update for the new day
             return;
-        data.lastDistributeDay = dt.Day;
+        data.lastSaveDay = dt.Day;
 
         int year = dt.Year;
         int prevMonth = dt.Month - 1;
@@ -199,9 +199,13 @@ class DataManagerClass
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;
-        // TODO: if billDay is 31, but the month is to 30(or 28)
-        if (dt.Day == data.settings.billDay) // the data for the month is full
+        // the data for the month is full or if we miss the bill day
+        if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
+            dt.Month > data.lastSaveMonth + 1)
         {
+            data.lastSaveMonth++;
+
+            DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
             for (int i = 0; i < MONITORS_COUNT; i++)
             {
                 for (int t = 0; t < TARIFFS_COUNT; t++)
@@ -219,6 +223,7 @@ class DataManagerClass
             }
         }
 
+        DEBUGLOG("DataManager", "Save data for %d day", prevDay);
         for (int i = 0; i < MONITORS_COUNT; i++)
         {
             uint32_t sum[3] = {0, 0, 0};

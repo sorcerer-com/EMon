@@ -6,6 +6,8 @@
 #include <StreamString.h>
 #include <Hash.h>
 
+#include "src/NTPClient.h"
+
 class WebHandler
 {
   private:
@@ -105,7 +107,7 @@ class WebHandler
         result += SF("data.tariffsCount = ") + String(TARIFFS_COUNT) + SF(";\n");
 
         date_time dt = DataManager.getCurrentTime();
-        result += SF("data.time = '") + datetimeToISOString(dt) + SF("';\n");
+        result += SF("data.time = '") + dateTimeToString(dt, true) + SF("';\n");
         result += SF("\n");
 
         result += SF("data.settings = {};\n");
@@ -290,27 +292,6 @@ class WebHandler
         else if (filename.endsWith(".gz"))
             return "application/x-gzip";
         return "text/plain";
-    }
-
-    inline String datetimeToISOString(const date_time &dt) const
-    {
-        String result = String(dt.Year) + "-";
-        if (dt.Month < 10)
-            result += "0";
-        result += String(dt.Month) + "-";
-        if (dt.Day < 10)
-            result += "0";
-        result += String(dt.Day) + "T";
-        if (dt.Hour < 10)
-            result += "0";
-        result += String(dt.Hour) + ":";
-        if (dt.Minute < 10)
-            result += "0";
-        result += String(dt.Minute) + ":";
-        if (dt.Second < 10)
-            result += "0";
-        result += String(dt.Second) + "Z";
-        return result;
     }
 
     void handleSettings()
@@ -542,12 +523,13 @@ class WebHandler
         result += SF("<br/>\n");
 
         result += "Local Time: ";
-        result += String(dt.Hour) + SF(":") + String(dt.Minute) + SF(":") + String(dt.Second) + SF(" ") +
-                  String(dt.Day) + SF("/") + String(dt.Month) + SF("/") + String(dt.Year);
+        result += dateTimeToString(dt);
         result += SF(" (millis: ") + String(millis()) + SF(")");
         result += SF("<br/>\n");
 
-        result += SF("LastDistrDay: ") + String(DataManager.data.lastDistributeDay) + SF(", ");
+        result += SF("LastSaveHour: ") + String(DataManager.data.lastSaveHour) + SF(", ");
+        result += SF("LastSaveDay: ") + String(DataManager.data.lastSaveDay) + SF(", ");
+        result += SF("LastSaveMonth: ") + String(DataManager.data.lastSaveMonth) + SF(", ");
         result += SF("Tariffs: ");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {

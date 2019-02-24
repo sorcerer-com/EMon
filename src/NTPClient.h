@@ -117,7 +117,7 @@ uint32_t getTime()
     return 0; // return 0 if unable to get the time
 }
 
-bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer)
+inline bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer)
 {
     // set all bytes in the buffer to 0
     memset(ntpPacketBuffer, 0, NTP_PACKET_SIZE);
@@ -140,7 +140,7 @@ bool sendNTPpacket(const char *address, UDP &udp, uint8_t *ntpPacketBuffer)
     return true;
 }
 
-uint8_t getMonthLength(const uint8_t &month, const uint8_t &year)
+inline uint8_t getMonthLength(const uint8_t &month, const uint8_t &year)
 {
     if (month == 2)
     { // february
@@ -157,6 +157,33 @@ uint8_t getMonthLength(const uint8_t &month, const uint8_t &year)
     {
         return monthDays[month - 1];
     }
+}
+
+inline String dateTimeToString(const date_time &dt, const bool& iso = false)
+{
+    String result = String(dt.Year) + SF("-");
+    if (dt.Month < 10)
+        result += SF("0");
+    result += String(dt.Month) + SF("-");
+    if (dt.Day < 10)
+        result += SF("0");
+    if (iso)
+        result += String(dt.Day) + SF("T");
+    else
+        result += String(dt.Day) + SF(" ");
+    if (dt.Hour < 10)
+        result += SF("0");
+    result += String(dt.Hour) + SF(":");
+    if (dt.Minute < 10)
+        result += SF("0");
+    result += String(dt.Minute) + SF(":");
+    if (dt.Second < 10)
+        result += SF("0");
+    if (iso)
+        result += String(dt.Second) + SF("Z");
+    else
+        result += String(dt.Second);
+    return result;
 }
 
 #endif

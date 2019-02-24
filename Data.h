@@ -26,7 +26,9 @@ class Data
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
-    uint8_t lastDistributeDay = 1;
+    uint8_t lastSaveHour = 0;
+    uint8_t lastSaveDay = 0;
+    uint8_t lastSaveMonth = 0;
 
     struct Settings
     {
@@ -67,8 +69,12 @@ class Data
         addr += sizeof(days);
         EEPROM.get(addr, hours);
         addr += sizeof(hours);
-        EEPROM.get(addr, lastDistributeDay);
-        addr += sizeof(lastDistributeDay);
+        EEPROM.get(addr, lastSaveHour);
+        addr += sizeof(lastSaveHour);
+        EEPROM.get(addr, lastSaveDay);
+        addr += sizeof(lastSaveDay);
+        EEPROM.get(addr, lastSaveMonth);
+        addr += sizeof(lastSaveMonth);
 
         EEPROM.get(addr, settings);
         addr += sizeof(settings);
@@ -83,7 +89,9 @@ class Data
         }
 
         // TODO: remove / how to set in the first place
-        //settings.lastDistributeDay = 11;
+        //lastSaveHour = 22;
+        //lastSaveDay = 22;
+        //lastSaveMonth = 2;
         settings.timeZone = 2;
         settings.tariffStartHours[0] = 7;
         settings.tariffStartHours[1] = 23;
@@ -122,8 +130,12 @@ class Data
         addr += sizeof(days);
         EEPROM.put(addr, hours);
         addr += sizeof(hours);
-        EEPROM.put(addr, lastDistributeDay);
-        addr += sizeof(lastDistributeDay);
+        EEPROM.put(addr, lastSaveHour);
+        addr += sizeof(lastSaveHour);
+        EEPROM.put(addr, lastSaveDay);
+        addr += sizeof(lastSaveDay);
+        EEPROM.put(addr, lastSaveMonth);
+        addr += sizeof(lastSaveMonth);
 
         EEPROM.put(addr, settings);
         addr += sizeof(settings);
@@ -151,7 +163,9 @@ class Data
         memset(months, 0, sizeof(months));
         memset(days, 0, sizeof(days));
         memset(hours, 0, sizeof(hours));
-        lastDistributeDay = 0;
+        lastSaveHour = 0;
+        lastSaveDay = 0;
+        lastSaveMonth = 0;
 
         // basic settings
         settings.timeZone = 0;
