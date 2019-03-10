@@ -5,7 +5,7 @@
 #include <ESP8266mDNS.h>
 #include <FS.h>
 
-#define REMOTE_DEBUG // TODO: remove
+#define REMOTE_DEBUG // TODO: remove REMOTE_DEBUG
 #include "src/RemoteDebugger.h"
 #include "DataManager.h"
 #include "WebHandler.h"
@@ -15,10 +15,12 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
+const uint8_t buttonPin = 0;
+unsigned long buttonTimer = 0;
+
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
 
 // TODO: print readme, high voltage warning label
-// TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password?
 // TODO: maybe define real monitors count
 // TODO: maybe define(determine) the real tarriffs count
 // TODO: skip first data - wrong one
@@ -28,6 +30,8 @@ void setup()
 #ifdef REMOTE_DEBUG
   RemoteDebugger.begin(server);
 #endif
+
+  pinMode(buttonPin, INPUT_PULLUP);
 
   // setup WiFi
   WiFi.persistent(false);
@@ -85,7 +89,28 @@ void loop()
   MDNS.update();
   server.handleClient();
 
+  // Reset button
+  int buttonState = digitalRead(buttonPin);
+  if (buttonState == LOW) // button down
+  {
+    if (buttonTimer == 0)
+      buttonTimer = millis();
+    else if (millis() - buttonTimer > 5 * MILLIS_IN_A_SECOND)
+    {
+      DataManager.data.reset();
+      DataManager.data.writeEEPROM(true);
+      server.client().stop();
+      ESP.restart();
+    }
+  }
+  if (buttonState == HIGH && buttonTimer > 0) // button up
+  {
+    server.client().stop();
+    ESP.restart();
+  }
+
   // TODO: maybe try to reconnect more often, if not connected
+  // Try to reconnect to WiFi
   if (millis() - reconnectTimer > 5 * MILLIS_IN_A_SECOND)
   {
     reconnectTimer = millis();

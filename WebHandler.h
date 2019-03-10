@@ -43,6 +43,7 @@ class WebHandler
 
     void handleLogin(const HTTPMethod &method) const
     {
+        digitalWrite(LED_BUILTIN, LOW);
         if (method == HTTP_GET)
         {
             if (authenticate(false))
@@ -70,6 +71,7 @@ class WebHandler
                 server.send(302, "text/plain", "");
             }
         }
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     bool authenticate(const bool &redirect = true) const
