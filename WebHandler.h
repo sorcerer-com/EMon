@@ -11,7 +11,6 @@
 class WebHandler
 {
   private:
-    const int ledPin = 2;
     ESP8266WebServer &server;
     bool updated = false;
 
@@ -98,7 +97,7 @@ class WebHandler
         if (!authenticate())
             return;
 
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
 
         DEBUGLOG("WebHandler", "Generating data.js");
         unsigned long timer = millis();
@@ -232,12 +231,12 @@ class WebHandler
         DEBUGLOG("WebHandler", "Generating data.js (%d bytes) for %d millisec", result.length(), (millis() - timer));
 
         server.send(200, "application/javascript", result);
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     bool handleFileRead(String path) const
     {
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
 
         DEBUGLOG("WebHandler", "HandleFileRead: %s", path.c_str());
         if (path.endsWith("/"))
@@ -257,12 +256,12 @@ class WebHandler
             file.close();
             DEBUGLOG("WebHandler", "\tSent file: %s", path.c_str());
 
-            digitalWrite(ledPin, HIGH);
+            digitalWrite(LED_BUILTIN, HIGH);
             return true;
         }
         DEBUGLOG("WebHandler", "\tFile Not Found: %s", path.c_str());
 
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         return false; // If the file doesn't exist, return false
     }
 
@@ -300,7 +299,7 @@ class WebHandler
         if (!authenticate())
             return;
 
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
 
         bool restart = false;
         int listParamIdx = 0;
@@ -438,7 +437,7 @@ class WebHandler
             }
         }
 
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     void handleUpdate()
@@ -446,7 +445,7 @@ class WebHandler
         if (!authenticate())
             return;
 
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         // from ESP8266HTTPUpdateServer
         // handler for the file upload, get's the sketch bytes, and writes
         // them through the Update object
@@ -501,7 +500,7 @@ class WebHandler
         }
         delay(0);
 
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     void handleRaw() const
@@ -509,7 +508,7 @@ class WebHandler
         if (!authenticate())
             return;
 
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
 
         FSInfo fs_info;
         SPIFFS.info(fs_info);
@@ -697,7 +696,7 @@ class WebHandler
         if (!authenticate())
             return;
 
-        digitalWrite(ledPin, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
 
         String result = "[";
         for (int m = 0; m < MONITORS_COUNT; m++)
@@ -715,7 +714,7 @@ class WebHandler
         result += "]";
 
         server.send(200, "text/plain", result);
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     void handleRestart() const

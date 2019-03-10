@@ -70,7 +70,6 @@ class DataManagerClass
             if (dt.Hour != data.lastSaveHour)
             {
                 data.lastSaveHour = dt.Hour;
-                distributeData(dt);
 
                 int prevHour = dt.Hour - 1;
                 if (prevHour < 0)
@@ -89,6 +88,9 @@ class DataManagerClass
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
                              prevHour, m, data.hours[prevHour][m]);
                 }
+                
+                distributeData(dt);
+                
                 data.writeEEPROM();
             }
 
@@ -194,7 +196,7 @@ class DataManagerClass
   private:
     void distributeData(const date_time &dt)
     {
-        if (dt.Day == data.lastSaveDay || dt.Hour == 0) // if not the first update for the new day
+        if (dt.Day == data.lastSaveDay) // if not the first update for the new day
             return;
         data.lastSaveDay = dt.Day;
 
@@ -209,29 +211,6 @@ class DataManagerClass
         int prevDay = dt.Day - 1;
         if (prevDay == 0)
             prevDay += daysCount;
-        // the data for the month is full or if we miss the bill day
-        if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
-            dt.Month > data.lastSaveMonth + 1)
-        {
-            data.lastSaveMonth++;
-
-            DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
-            for (int i = 0; i < MONITORS_COUNT; i++)
-            {
-                for (int t = 0; t < TARIFFS_COUNT; t++)
-                {
-                    uint32_t sum = 0;
-                    for (int d = 0; d < daysCount; d++)
-                    {
-                        sum += data.days[d][t][i];
-                    }
-                    data.months[prevMonth - 1][t][i] = sum;
-
-                    DEBUGLOG("DataManager", "Consumption for %d month (%d tariff) monitor %d: %d",
-                             prevMonth, t, i, data.months[prevMonth - 1][t][i]);
-                }
-            }
-        }
 
         DEBUGLOG("DataManager", "Save data for %d day", prevDay);
         for (int i = 0; i < MONITORS_COUNT; i++)
@@ -256,6 +235,30 @@ class DataManagerClass
                      prevDay, i, data.days[prevDay - 1][1][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
                      prevDay, i, data.days[prevDay - 1][2][i]);
+        }
+        
+        // the data for the month is full or if we miss the bill day
+        if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
+            dt.Month > data.lastSaveMonth + 1)
+        {
+            data.lastSaveMonth++;
+
+            DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
+            for (int i = 0; i < MONITORS_COUNT; i++)
+            {
+                for (int t = 0; t < TARIFFS_COUNT; t++)
+                {
+                    uint32_t sum = 0;
+                    for (int d = 0; d < daysCount; d++)
+                    {
+                        sum += data.days[d][t][i];
+                    }
+                    data.months[prevMonth - 1][t][i] = sum;
+
+                    DEBUGLOG("DataManager", "Consumption for %d month (%d tariff) monitor %d: %d",
+                             prevMonth, t, i, data.months[prevMonth - 1][t][i]);
+                }
+            }
         }
     }
 

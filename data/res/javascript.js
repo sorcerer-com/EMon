@@ -383,7 +383,7 @@ function drawCurrentUsage(canvasName) {
 			data.current.energy,
 			maxValue * 1.2,
 			{
-				radius: 75,
+				radius: 110,
 				label: "Total",
 				units: "W"
 			});
@@ -481,7 +481,7 @@ function drawCurrentDay(canvasName) {
 		var labels = [];
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
-			labels.push("Monitor " + m);
+			labels.push("Monitor " + (m + 1));
 			values.push([]);
 			for (var t = 0; t < data.tariffsCount; t++) {
 				values[m].push(toKilo(data.current.day[m][t]));

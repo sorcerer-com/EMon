@@ -5,8 +5,7 @@
 #include <ESP8266mDNS.h>
 #include <FS.h>
 
-// TODO:
-#define REMOTE_DEBUG
+#define REMOTE_DEBUG // TODO: remove
 #include "src/RemoteDebugger.h"
 #include "DataManager.h"
 #include "WebHandler.h"
@@ -18,10 +17,11 @@ WebHandler webHandler(server);
 
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
 
-// TODO: print readme
+// TODO: print readme, high voltage warning label
 // TODO: hardware reset way, if cannot connect to WiFi (or create AP), if forget the login password?
 // TODO: maybe define real monitors count
-// TODO: maybe import/export data -> csv (from data.js)
+// TODO: maybe define(determine) the real tarriffs count
+// TODO: skip first data - wrong one
 void setup()
 {
   Serial.begin(9600);
@@ -85,24 +85,26 @@ void loop()
   MDNS.update();
   server.handleClient();
 
+  // TODO: maybe try to reconnect more often, if not connected
   if (millis() - reconnectTimer > 5 * MILLIS_IN_A_SECOND)
   {
     reconnectTimer = millis();
     if (wifiMulti.run() != WL_CONNECTED)
     {
+      DEBUGLOG("EMonitor", "Fail to reconnect...");
       if (WiFi.getMode() == WIFI_STA)
       {
         // 192.168.244.1
-        DEBUGLOG("EMonitor", "Fail to reconnect... create AP");
+        DEBUGLOG("EMonitor", "Create AP");
         WiFi.mode(WIFI_AP_STA);
         if (!WiFi.softAPConfig(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
-                              DataManager.data.settings.wifi_subnet))
+                               DataManager.data.settings.wifi_subnet))
         {
           DEBUGLOG("EMonitor", "Config WiFi AP - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
-                  IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
-                  IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
-                  IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
-                  IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
+                   IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
+                   IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
+                   IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
+                   IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
         }
         else
         {

@@ -4,18 +4,22 @@
 #include <StreamString.h>
 
 #ifdef DEBUG
-#define DEBUGLOG(category, ...)        \
-    printMillis(Serial, millis());     \
-    Serial.printf(" %-15s", category); \
-    Serial.printf(__VA_ARGS__);        \
-    Serial.println()
+#define DEBUGLOG(category, ...)            \
+    {                                      \
+        printMillis(Serial, millis());     \
+        Serial.printf(" %-15s", category); \
+        Serial.printf(__VA_ARGS__);        \
+        Serial.println();                  \
+    }
 #elif defined REMOTE_DEBUG
-#define DEBUGLOG(category, ...)                \
-    printMillis(RemoteDebugger, millis());     \
-    RemoteDebugger.printf(" %-15s", category); \
-    RemoteDebugger.printf(__VA_ARGS__);        \
-    RemoteDebugger.println();                  \
-    RemoteDebugger.clean()
+#define DEBUGLOG(category, ...)                    \
+    {                                              \
+        printMillis(RemoteDebugger, millis());     \
+        RemoteDebugger.printf(" %-15s", category); \
+        RemoteDebugger.printf(__VA_ARGS__);        \
+        RemoteDebugger.println();                  \
+        RemoteDebugger.clean();                    \
+    }
 #else
 #define DEBUGLOG(category, ...)
 #endif

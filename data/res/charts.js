@@ -17,7 +17,7 @@ function drawCircularChart(canvasName, values, maxValue, options) {
 	var centerY = canvas.height / 2;
 
 	if (!options.radius) {
-		options.radius = canvas.width / 2.5 - values.length * options.width;
+		options.radius = canvas.width / 2.5;
 	}
 
 	var total = 0;
@@ -25,7 +25,7 @@ function drawCircularChart(canvasName, values, maxValue, options) {
 		len = values[i] / maxValue;
 		ctx.beginPath();
 		ctx.strokeStyle = options.colors[i];
-		ctx.arc(centerX, centerY, options.radius + (i * (options.width + 2)), Math.PI / 2, (len * Math.PI * 2) + Math.PI / 2); // (x, y, R, startAngle, endAngle)
+		ctx.arc(centerX, centerY, options.radius - (i * (options.width + 2)), Math.PI / 2, (len * Math.PI * 2) + Math.PI / 2); // (x, y, R, startAngle, endAngle)
 		ctx.stroke();
 
 		total += values[i];
@@ -417,7 +417,7 @@ function drawDonutChart(canvasName, sections, options) {
 	ctx.lineWidth = options.sectionsWidth;
 	var startAngle = (1 / 2) / degree;
 	for (var i = 0; i < sections.length; i++) {
-		if (sections[i] == 0)
+		if (sections[i] * degree * Math.PI < blankSpace)
 			continue;
 
 		ctx.beginPath();
