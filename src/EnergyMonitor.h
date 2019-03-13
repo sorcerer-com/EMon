@@ -37,7 +37,7 @@ class EnergyMonitor
             return;
         irms /= batchesCount;
         current = irms;
-        if (irms < 0.1) // noise
+        if (irms < 0.3) // noise
             irms = 0.0;
         power += round(irms * voltage);
         counter++;
@@ -72,7 +72,7 @@ class EnergyMonitor
 
   private:
     int16_t sampleI;
-    double offsetI = 2 << 13; // half signed 16bit
+    double offsetI = (double)(2 << 13) * 3.3 / 4.096; // half signed 16bit * (3.3V / 4.096V (ADS))
     double filteredI;
     double sqI, sumI;
     double temp_irms;

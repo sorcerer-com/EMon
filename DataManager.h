@@ -52,8 +52,8 @@ class DataManagerClass
 
     void update()
     {
-        for (int i = 0; i < MONITORS_COUNT; i++)
-            getMonitor(i).update();
+        for (int m = 0; m < MONITORS_COUNT; m++)
+            getMonitor(m).update();
 
         if (millis() - timer > MILLIS_IN_A_MINUTE)
         {
@@ -88,9 +88,9 @@ class DataManagerClass
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
                              prevHour, m, data.hours[prevHour][m]);
                 }
-                
+
                 distributeData(dt);
-                
+
                 data.writeEEPROM();
             }
 
@@ -235,8 +235,9 @@ class DataManagerClass
                      prevDay, i, data.days[prevDay - 1][1][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
                      prevDay, i, data.days[prevDay - 1][2][i]);
+            yield();
         }
-        
+
         // the data for the month is full or if we miss the bill day
         if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
             dt.Month > data.lastSaveMonth + 1)
@@ -258,6 +259,7 @@ class DataManagerClass
                     DEBUGLOG("DataManager", "Consumption for %d month (%d tariff) monitor %d: %d",
                              prevMonth, t, i, data.months[prevMonth - 1][t][i]);
                 }
+                yield();
             }
         }
     }

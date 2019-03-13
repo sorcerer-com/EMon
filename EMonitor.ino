@@ -21,9 +21,6 @@ unsigned long buttonTimer = 0;
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
 
 // TODO: print readme, high voltage warning label
-// TODO: maybe define real monitors count
-// TODO: maybe define(determine) the real tarriffs count
-// TODO: skip first data - wrong one
 void setup()
 {
   Serial.begin(9600);
@@ -109,7 +106,6 @@ void loop()
     ESP.restart();
   }
 
-  // TODO: maybe try to reconnect more often, if not connected
   // Try to reconnect to WiFi
   if (millis() - reconnectTimer > 5 * MILLIS_IN_A_SECOND)
   {

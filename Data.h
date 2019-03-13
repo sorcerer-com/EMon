@@ -22,7 +22,7 @@ extern "C" uint32_t _SPIFFS_end;
 class Data
 {
   public:
-    // xTARIFFS_COUNT for different tariffs
+    // in 0.01 W
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t hours[24][MONITORS_COUNT];
@@ -90,35 +90,6 @@ class Data
             spi_flash_read(EEPROM_end - sizeof(minutesBuffer), (uint32_t *)minutesBuffer, sizeof(minutesBuffer));
             interrupts();
         }
-
-        // TODO: remove / how to set in the first place
-        startTime = 0;
-        lastSaveHour = 21;
-        lastSaveDay = 24;
-        lastSaveMonth = 2;
-        settings.timeZone = 2;
-        settings.tariffStartHours[0] = 7;
-        settings.tariffStartHours[1] = 23;
-        settings.tariffStartHours[2] = 23;
-        settings.tariffPrices[0] = 0.17732;
-        settings.tariffPrices[1] = 0.10223;
-        settings.tariffPrices[2] = 0.10223;
-        settings.billDay = 6;
-        strcpy(settings.currencySymbols, String("lv.").c_str());
-        strcpy(settings.monitorsNames[0], String("Lampi, Kuhnia, Kotle").c_str());
-        strcpy(settings.monitorsNames[1], String("Furna, Hol, Kotle").c_str());
-        strcpy(settings.monitorsNames[2], String("Boiler, Spalnia, Detska, Kotle").c_str());
-        strcpy(settings.monitorsNames[3], "");
-        //
-        strcpy(settings.password, "");
-        settings.coefficient = 1.0;
-        //
-        strcpy(settings.wifi_ssid, "m68");
-        strcpy(settings.wifi_passphrase, "bekonche");
-        settings.wifi_ip = IPAddress(0);
-        settings.wifi_gateway = IPAddress(0);
-        settings.wifi_subnet = IPAddress(0);
-        settings.wifi_dns = IPAddress(0);
     }
 
     void writeEEPROM(const bool &includeMinutesBuffer = false)

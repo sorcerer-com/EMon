@@ -1,4 +1,5 @@
 // if data is in sessionStorage already and not refreshing
+sessionStorage.removeItem("data"); // disable caching for now
 if (sessionStorage.data && performance.navigation.type != 1) {
 	data = JSON.parse(sessionStorage.data);
 }
@@ -306,11 +307,13 @@ $(window).on("load", function () {
 	$(".ch-year-total.all-monitors").append(`${total.toFixed(2)} kWh`);
 	$(".ch-month-average.all-monitors").append(`${(total / 12).toFixed(2)} kWh`);
 	if (total == 0) total = 1;
+	var values = [];
 	for (var t = 0; t < data.tariffsCount; t++) {
-		var value = lastYear(t);
+		values[t] = lastYear(t);
 		$(`.ch-year-tariff-${t + 1}.all-monitors`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+			.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 	}
+	$(".ch-month-average.all-monitors").append(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
 
 	//// Year per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
@@ -325,11 +328,13 @@ $(window).on("load", function () {
 		$(`.ch-year-total.year-monitor-${m + 1}`).append(`${total.toFixed(2)} kWh`);
 		$(`.ch-month-average.year-monitor-${m + 1}`).append(`${(total / 12).toFixed(2)} kWh`);
 		if (total == 0) total = 1;
+		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
-			var value = lastYear(t, m);
+			values[t] = lastYear(t, m);
 			$(`.ch-year-tariff-${t + 1}.year-monitor-${m + 1}`)
-				.append(`${value.toFixed(2)} kWh(${Math.round(value / total * 100)} %)`);
+				.append(`${values[t].toFixed(2)} kWh(${Math.round(values[t] / total * 100)} %)`);
 		}
+		$(`.ch-month-average.year-monitor-${m + 1}`).append(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
 	}
 });
 
