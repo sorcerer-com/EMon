@@ -97,6 +97,59 @@ $(window).on("load", function () {
 	$(".cr-total-prevMonth-value")
 		.append(` (${total.toFixed(2)} kWh, ${values.map(function (a) { return a.toFixed(2); }).join(" / ")})`);
 
+	//// Current Usage
+	var total = 0;
+	for (var m = 0; m < data.monitorsCount; m++) {
+		total += data.current.energy[m];
+	}
+	if (total == 0) total = 1;
+	for (var m = 0; m < data.monitorsCount; m++) {
+		var value = data.current.energy[m];
+		$(`.cr-current-usage.monitor-${m + 1}`)
+			.append(`${value.toFixed(2)} W (${Math.round(value / total * 100)} %)`);
+	}
+
+	//// Current Hour
+	var total = 0;
+	for (var m = 0; m < data.monitorsCount; m++) {
+		total += toKilo(data.current.hour[m]);
+	}
+	if (total == 0) total = 1;
+	for (var m = 0; m < data.monitorsCount; m++) {
+		var value = toKilo(data.current.hour[m]);
+		$(`.cr-current-hour.monitor-${m + 1}`)
+			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+	}
+
+	//// Current Day
+	// total
+	var total = 0;
+	for (var m = 0; m < data.monitorsCount; m++) {
+		for (var t = 0; t < data.tariffsCount; t++) {
+			total += toKilo(data.current.day[m][t]);
+		}
+	}
+	$(`.cr-current-day-total`)
+		.append(`${total.toFixed(2)} kWh`);
+	if (total == 0) total = 1;
+	// by monitors
+	for (var m = 0; m < data.monitorsCount; m++) {
+		var value = 0;
+		for (var t = 0; t < data.tariffsCount; t++) {
+			value += toKilo(data.current.day[m][t]);
+		}
+		$(`.cr-current-day.monitor-${m + 1}`)
+			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+	}
+	// by tariffs
+	for (var t = 0; t < data.tariffsCount; t++) {
+		var value = 0;
+		for (var m = 0; m < data.monitorsCount; m++) {
+			value += toKilo(data.current.day[m][t]);
+		}
+		$(`.cr-current-day.tariff-${t + 1}`)
+			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+	}
 
 	//// Last 24 Hours
 	// total
@@ -209,61 +262,41 @@ $(window).on("load", function () {
 		.append(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
 
 
-	// Current
-	//// Current Usage
-	var total = 0;
+	// Monitors
+	//// Last 24 hours per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
-		total += data.current.energy[m];
-	}
-	if (total == 0) total = 1;
-	for (var m = 0; m < data.monitorsCount; m++) {
-		var value = data.current.energy[m];
-		$(`.cs-current-usage.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} W (${Math.round(value / total * 100)} %)`);
-	}
-
-	//// Current Hour
-	var total = 0;
-	for (var m = 0; m < data.monitorsCount; m++) {
-		total += toKilo(data.current.hour[m]);
-	}
-	if (total == 0) total = 1;
-	for (var m = 0; m < data.monitorsCount; m++) {
-		var value = toKilo(data.current.hour[m]);
-		$(`.cs-current-hour.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
-	}
-
-	//// Current Day
-	// total
-	var total = 0;
-	for (var m = 0; m < data.monitorsCount; m++) {
+		if (data.settings.monitorsNames[m] != "") {
+			$(`.section-title.last-24-hours-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
+		}
+		
+		// total
+		var total = 0;
+		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
-			total += toKilo(data.current.day[m][t]);
+			values.push(0);
 		}
-	}
-	$(`.cs-current-day-total`)
-		.append(`${total.toFixed(2)} kWh`);
-	if (total == 0) total = 1;
-	// by monitors
-	for (var m = 0; m < data.monitorsCount; m++) {
-		var value = 0;
-		for (var t = 0; t < data.tariffsCount; t++) {
-			value += toKilo(data.current.day[m][t]);
-		}
-		$(`.cs-current-day.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
-	}
-	// by tariffs
-	for (var t = 0; t < data.tariffsCount; t++) {
-		var value = 0;
-		for (var m = 0; m < data.monitorsCount; m++) {
-			value += toKilo(data.current.day[m][t]);
-		}
-		$(`.cs-current-day.tariff-${t + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
-	}
+		for (var h = 0; h < 24; h++) {
+			var value = toKilo(data.hours[m][h]);
+			total += value;
 
+			if (h >= data.settings.tariffStartHours[0] && h < data.settings.tariffStartHours[1])
+				values[0] += value;
+			else if (h >= data.settings.tariffStartHours[1] && h < data.settings.tariffStartHours[2])
+				values[1] += value;
+			else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
+				values[2] += value;
+		}
+		$(`.cs-last-24-hours-monitor-${m + 1}-total`).append(`${total.toFixed(2)} kWh`);
+		$(`.cs-last-24-hours-monitor-${m + 1}-average`)
+			.append(`${(total / 24).toFixed(2)} kWh (${values.map(function (a) { return (a / 24).toFixed(2); }).join("/")})`);
+		if (total == 0) total = 1;
+		// by tariffs
+		for (var t = 0; t < data.tariffsCount; t++) {
+			$(`.cs-last-24-hours-monitor-${m + 1}.tariff-${t + 1}`)
+				.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
+		}
+	}
+	
 	//// Last month per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
@@ -395,7 +428,7 @@ function drawCurrentUsage(canvasName) {
 	});
 }
 
-function drawLast24Hours(canvasName) {
+function drawLast24Hours(canvasName, monitorIdx) {
 	$(window).on("load", function () {
 		var labels = [];
 		var values = [];
@@ -404,9 +437,14 @@ function drawLast24Hours(canvasName) {
 		for (var h = 0; h < 24; h++) {
 			var hour = (dt.getUTCHours() + h) % 24;
 			labels.push(hour);
-			values.push(0);
-			for (var m = 0; m < data.monitorsCount; m++) {
-				values[h] += toKilo(data.hours[m][hour]);
+			values.push(0);			
+			if (monitorIdx != undefined) {
+				values[h] = toKilo(data.hours[monitorIdx][hour]);
+			}
+			else {
+				for (var m = 0; m < data.monitorsCount; m++) {
+					values[h] += toKilo(data.hours[m][hour]);
+				}
 			}
 
 			if (hour >= data.settings.tariffStartHours[0] && hour < data.settings.tariffStartHours[1])

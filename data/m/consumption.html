@@ -64,6 +64,61 @@
 					</span>
 				</div>
 			</section>
+			
+			<section class="section-current-usage swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Current usage</p>
+					<canvas width="250px" height="250px" id="chart-current-usage"></canvas>
+					<script type="text/javascript">drawCurrentUsage("chart-current-usage");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-current-usage monitor-1">Monitor 1 Usage: </p>
+						<p class="cr-current-usage monitor-2">Monitor 2 Usage: </p>
+						<p class="cr-current-usage monitor-3">Monitor 3 Usage: </p>
+						<p class="cr-current-usage monitor-4">Monitor 4 Usage: </p>
+					</span>
+				</div>
+			</section>
+
+			<section class="section-current-hour swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Current Hour</p>
+					<canvas width="250" height="250" id="chart-current-hour"></canvas>
+					<script type="text/javascript">drawCurrentHour("chart-current-hour");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-current-hour monitor-1 section">Monitor 1 Consumption: </p>
+						<p class="cr-current-hour monitor-2 section">Monitor 2 Consumption: </p>
+						<p class="cr-current-hour monitor-3 section">Monitor 3 Consumption: </p>
+						<p class="cr-current-hour monitor-4 section">Monitor 4 Consumption: </p>
+					</span>
+				</div>
+			</section>
+
+			<section class="section-current-day swiper-slide">
+				<div class="graphics">
+					<p class="section-title">Current Day</p>
+					<canvas width="290px" height="200px" id="chart-current-day"></canvas>
+					<script type="text/javascript">drawCurrentDay("chart-current-day");</script>
+				</div>
+				<div class="graphics-info">
+					<span class="chart-numbers">
+						<p class="cr-current-day tariff-1 section">Tariff 1 Consumption: </p>
+						<p class="cr-current-day tariff-2 section">Tariff 2 Consumption: </p>
+						<p class="cr-current-day tariff-3 section">Tariff 3 Consumption: </p>
+						<hr>
+						<p class="cr-current-day monitor-1 section">Monitor 1 Consumption: </p>
+						<p class="cr-current-day monitor-2 section">Monitor 2 Consumption: </p>
+						<p class="cr-current-day monitor-3 section">Monitor 3 Consumption: </p>
+						<p class="cr-current-day monitor-4 section">Monitor 4 Consumption: </p>
+						<hr>
+						<p class="cr-current-day-total">Total: </p>
+					</span>
+				</div>
+			</section>
+			
 			<section class="section-last-24-hours swiper-slide">
 				<div class="graphics">
 					<p class="section-title">Last 24 Hours</p>
@@ -88,6 +143,7 @@
 					</span>
 				</div>
 			</section>
+			
 			<section class="section-last-month swiper-slide">
 				<div class="graphics">
 					<p class="section-title">Last Month</p>
@@ -123,31 +179,31 @@
 
 	<footer>
 		<ul class="row">
-			<li class="col-xs-3">
+			<li class="col-xs-3" title="Settings">
 				<a href="settings.html">
 					<div class="glyphicon glyphicon-menu-hamburger"></div>
 					<p>Settings</p>
 				</a>
 			</li>
-			<li class="col-xs-2" id="active">
+			<li class="col-xs-2" title="Consumption" id="active">
 				<a href="consumption.html">
 					<div class="glyphicon glyphicon-home"></div>
 					<p>Consumption</p>
 				</a>
 			</li>
-			<li class="col-xs-2">
-				<a href="current.html">
-					<div class="glyphicon glyphicon-eye-open"></div>
-					<p>Current</p>
+			<li class="col-xs-2" title="Monitors">
+				<a href="monitors.html">
+					<div class="glyphicon glyphicon-tasks"></div>
+					<p>Monitors</p>
 				</a>
 			</li>
-			<li class="col-xs-2">
+			<li class="col-xs-2" title="History">
 				<a href="history.html">
 					<div class="glyphicon glyphicon-stats"></div>
 					<p>History</p>
 				</a>
 			</li>
-			<li class="col-xs-3">
+			<li class="col-xs-3" title="Refresh">
 				<a onclick="document.location.reload(true)" style="cursor: pointer">
 					<div class="glyphicon glyphicon-refresh"></div>
 					<p>Refresh</p>

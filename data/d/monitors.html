@@ -29,62 +29,80 @@
 	<header>
 		<div class="glyphicon glyphicon-flash pull-left"></div>
 		Energy Monitor
-		<a href="../m/current.html">
+		<a href="../m/monitors.html">
 			<div class="glyphicon glyphicon-phone pull-right"></div>
 		</a>
 	</header>
 
 	<div class="pages">
-		<section class="section-current-usage">
+		<section class="section-last-24-hours-monitor-1">
 			<div class="graphics">
-				<p class="section-title">Current usage</p>
-				<canvas width="250px" height="250px" id="chart-current-usage"></canvas>
-				<script type="text/javascript">drawCurrentUsage("chart-current-usage");</script>
+				<p class="section-title last-24-hours-monitor-1">Last 24 Hours Monitor 1</p>
+				<canvas width="500px" height="250px" id="chart-last-24-hours-monitor-1"></canvas>
+				<script type="text/javascript">drawLast24Hours("chart-last-24-hours-monitor-1", 0);</script>
 			</div>
 			<div class="graphics-info">
 				<span class="chart-numbers">
-					<p class="cs-current-usage monitor-1">Monitor 1 Usage: </p>
-					<p class="cs-current-usage monitor-2">Monitor 2 Usage: </p>
-					<p class="cs-current-usage monitor-3">Monitor 3 Usage: </p>
-					<p class="cs-current-usage monitor-4">Monitor 4 Usage: </p>
+					<p class="cs-last-24-hours-monitor-1 tariff-1">Tariff 1 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-1 tariff-2">Tariff 2 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-1 tariff-3">Tariff 3 Consumption: </p>
+					<hr>
+					<p class="cs-last-24-hours-monitor-1-total">Total: </p>
+					<p class="cs-last-24-hours-monitor-1-average" title="value (divided by tariffs)">Hourly Average: </p>
 				</span>
 			</div>
 		</section>
-
-		<section class="section-current-hour">
+		
+		<section class="section-last-24-hours-monitor-2">
 			<div class="graphics">
-				<p class="section-title">Current Hour</p>
-				<canvas width="250" height="250" id="chart-current-hour"></canvas>
-				<script type="text/javascript">drawCurrentHour("chart-current-hour");</script>
+				<p class="section-title last-24-hours-monitor-2">Last 24 Hours Monitor 2</p>
+				<canvas width="500px" height="250px" id="chart-last-24-hours-monitor-2"></canvas>
+				<script type="text/javascript">drawLast24Hours("chart-last-24-hours-monitor-2", 1);</script>
 			</div>
 			<div class="graphics-info">
 				<span class="chart-numbers">
-					<p class="cs-current-hour monitor-1 section">Monitor 1 Consumption: </p>
-					<p class="cs-current-hour monitor-2 section">Monitor 2 Consumption: </p>
-					<p class="cs-current-hour monitor-3 section">Monitor 3 Consumption: </p>
-					<p class="cs-current-hour monitor-4 section">Monitor 4 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-2 tariff-1">Tariff 1 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-2 tariff-2">Tariff 2 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-2 tariff-3">Tariff 3 Consumption: </p>
+					<hr>
+					<p class="cs-last-24-hours-monitor-2-total">Total: </p>
+					<p class="cs-last-24-hours-monitor-2-average" title="value (divided by tariffs)">Hourly Average: </p>
 				</span>
 			</div>
 		</section>
-
-		<section class="section-current-day">
+		
+		<section class="section-last-24-hours-monitor-3">
 			<div class="graphics">
-				<p class="section-title">Current Day</p>
-				<canvas width="500px" height="250px" id="chart-current-day"></canvas>
-				<script type="text/javascript">drawCurrentDay("chart-current-day");</script>
+				<p class="section-title last-24-hours-monitor-3">Last 24 Hours Monitor 3</p>
+				<canvas width="500px" height="250px" id="chart-last-24-hours-monitor-3"></canvas>
+				<script type="text/javascript">drawLast24Hours("chart-last-24-hours-monitor-3", 2);</script>
 			</div>
 			<div class="graphics-info">
 				<span class="chart-numbers">
-					<p class="cs-current-day tariff-1 section">Tariff 1 Consumption: </p>
-					<p class="cs-current-day tariff-2 section">Tariff 2 Consumption: </p>
-					<p class="cs-current-day tariff-3 section">Tariff 3 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-3 tariff-1">Tariff 1 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-3 tariff-2">Tariff 2 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-3 tariff-3">Tariff 3 Consumption: </p>
 					<hr>
-					<p class="cs-current-day monitor-1 section">Monitor 1 Consumption: </p>
-					<p class="cs-current-day monitor-2 section">Monitor 2 Consumption: </p>
-					<p class="cs-current-day monitor-3 section">Monitor 3 Consumption: </p>
-					<p class="cs-current-day monitor-4 section">Monitor 4 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-3-total">Total: </p>
+					<p class="cs-last-24-hours-monitor-3-average" title="value (divided by tariffs)">Hourly Average: </p>
+				</span>
+			</div>
+		</section>
+		
+		<section class="section-last-24-hours-monitor-4">
+			<div class="graphics">
+				<p class="section-title last-24-hours-monitor-4">Last 24 Hours Monitor 4</p>
+				<canvas width="500px" height="250px" id="chart-last-24-hours-monitor-4"></canvas>
+				<script type="text/javascript">drawLast24Hours("chart-last-24-hours-monitor-4", 3);</script>
+			</div>
+			<div class="graphics-info">
+				<span class="chart-numbers">
+					<p class="cs-last-24-hours-monitor-4 tariff-1">Tariff 1 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-4 tariff-2">Tariff 2 Consumption: </p>
+					<p class="cs-last-24-hours-monitor-4 tariff-3">Tariff 3 Consumption: </p>
 					<hr>
-					<p class="cs-current-day-total">Total: </p>
+					<p class="cs-last-24-hours-monitor-4-total">Total: </p>
+					<p class="cs-last-24-hours-monitor-4-average" title="value (divided by tariffs)">Hourly Average: </p>
 				</span>
 			</div>
 		</section>
@@ -178,9 +196,9 @@
 				</a>
 			</li>
 			<li class="col-xs-2" id="active">
-				<a href="current.html">
-					<div class="glyphicon glyphicon-eye-open"></div>
-					<p>Current</p>
+				<a href="monitors.html">
+					<div class="glyphicon glyphicon-tasks"></div>
+					<p>Monitors</p>
 				</a>
 			</li>
 			<li class="col-xs-2">
