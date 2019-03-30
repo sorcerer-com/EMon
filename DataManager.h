@@ -149,11 +149,15 @@ class DataManagerClass
         date_time dt = getCurrentTime();
 
         int year = dt.Year;
-        int prevMonth = dt.Month - 1;
-        if (prevMonth == 0)
+        int prevMonth = dt.Month;
+        if (dt.Day < data.settings.billDay)
         {
-            prevMonth += 12;
-            year--;
+            prevMonth = dt.Month - 1;
+            if (prevMonth == 0)
+            {
+                prevMonth += 12;
+                year--;
+            }
         }
         const uint8_t daysCount = getMonthLength(prevMonth, year);
 

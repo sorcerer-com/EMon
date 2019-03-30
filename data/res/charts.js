@@ -60,33 +60,37 @@ function drawBarChart(canvasName, labels, values, options) {
 
 	var barsCount = values.length;
 	var max = Math.ceil(Math.max.apply(Math, values));
-	var coef = (canvas.height - 21 - textHeight / 2) / max;
+	var coef = (canvas.height - 26 - textHeight / 2) / max;
 
-	var barWidth = Math.floor((canvas.width - 22 - barsCount - 1) / barsCount); // (canvas.width - barsStartX - gapsCount) / hours
-	var endChartX = (barWidth * barsCount) + barsCount - 1 + 22 - 16 + 4; // values + gapsCount + barsStartX - chartScaleStartX - 1
+	var barWidth = Math.floor((canvas.width - 27 - barsCount - 1) / barsCount); // (canvas.width - barsStartX - gapsCount) / hours
+	var endChartX = (barWidth * barsCount) + barsCount - 1 + 27 - 16 + 4; // values + gapsCount + barsStartX - chartScaleStartX - 1
 
 	// chart scale
 	ctx.fillStyle = options.scaleYColor;
 	ctx.fillText("0", 3, canvas.height - textHeight / 2);
-	ctx.fillRect(17, canvas.height - textHeight, endChartX, 1); // (x, y, width, height)	
+	ctx.fillRect(22, canvas.height - textHeight, endChartX, 1); // (x, y, width, height)	
 
-	ctx.fillText(Math.floor(max / 2), 0, Math.floor((canvas.height + 13) / 2 - 1));
-	ctx.fillRect(17, Math.floor((canvas.height + 13 - textHeight) / 2), endChartX, 1);
+	if (Math.floor(max) / 2 > 0) {
+		ctx.fillText(Math.floor(max) / 2, 0, Math.floor((canvas.height + 13) / 2 - 1));
+		ctx.fillRect(22, Math.floor((canvas.height + 13 - textHeight) / 2), endChartX, 1);
+	}
 
-	ctx.fillText(Math.floor(max), 0, 20);
-	ctx.fillRect(17, 20 - textHeight / 2, endChartX, 1);
+	if (Math.floor(max) / 2 > 0) {
+		ctx.fillText(Math.floor(max), 0, 20);
+		ctx.fillRect(22, 20 - textHeight / 2, endChartX, 1);
+	}
 
 
 	// bars
 	var textBetween = Math.ceil(ctx.measureText("00").width / barWidth);
 	for (var i = 0; i < barsCount; i++) {
 		ctx.fillStyle = options.colors[i % options.colors.length];
-		ctx.fillRect(i * (barWidth + 1) + 22, canvas.height - textHeight, barWidth, -Math.floor(values[i] * coef) - 1);
+		ctx.fillRect(i * (barWidth + 1) + 27, canvas.height - textHeight, barWidth, -Math.floor(values[i] * coef) - 1);
 
 		if (i % textBetween == 0) {
 			ctx.fillStyle = options.textColor;
 			ctx.font = "italic bold " + options.font;
-			var textX = i * (barWidth + 1) + 22 + barWidth / 2 - ctx.measureText(labels[i]).width / 2;
+			var textX = i * (barWidth + 1) + 27 + barWidth / 2 - ctx.measureText(labels[i]).width / 2;
 			ctx.fillText(labels[i], textX, canvas.height);
 		}
 	}
@@ -106,7 +110,7 @@ function drawBarChart(canvasName, labels, values, options) {
 				ctx.redraw = undefined;
 			}
 
-			var idx = Math.floor((posX - 22) / (barWidth + 1));
+			var idx = Math.floor((posX - 27) / (barWidth + 1));
 			if (idx < 0 || idx >= barsCount)
 				return;
 
@@ -116,15 +120,15 @@ function drawBarChart(canvasName, labels, values, options) {
 
 			ctx.redraw = true;
 			ctx.fillStyle = options.highlightColor;
-			ctx.fillRect(idx * (barWidth + 1) + 22, canvas.height - textHeight, barWidth, -Math.floor(values[idx] * coef) - 1);
+			ctx.fillRect(idx * (barWidth + 1) + 27, canvas.height - textHeight, barWidth, -Math.floor(values[idx] * coef) - 1);
 
 			ctx.fillStyle = options.highlightTextColor;
-			var textX = idx * (barWidth + 1) + 22 + barWidth / 2 - ctx.measureText(values[idx].toFixed(2)).width / 2;
+			var textX = idx * (barWidth + 1) + 27 + barWidth / 2 - ctx.measureText(values[idx].toFixed(2)).width / 2;
 			var textY = canvas.height - textHeight - Math.floor(values[idx] * coef) - 3;
 			ctx.fillText(values[idx].toFixed(2), textX, textY);
 
 			ctx.font = "italic bold " + options.font;
-			var textX = idx * (barWidth + 1) + 22 + barWidth / 2 - ctx.measureText(labels[idx]).width / 2;
+			var textX = idx * (barWidth + 1) + 27 + barWidth / 2 - ctx.measureText(labels[idx]).width / 2;
 			ctx.fillText(labels[idx], textX, canvas.height);
 		};
 		canvas.onmouseleave = function (e) {
@@ -193,11 +197,18 @@ function drawLineChart(canvasName, labels, values, options) {
 	ctx.fillText("0", 3, canvas.height - textHeight);
 	ctx.fillRect(17, gridHeight - textHeight / 2, barWidth * (maxCount - 1), 1); // (x, y, width, height)	
 
-	ctx.fillText(Math.floor(((gridHeight / 5) * 2) / coef), 0, Math.floor(gridHeight / 5) * 3 + textHeight / 2 - 1);
-	ctx.fillRect(17, Math.floor(gridHeight / 5) * 3, barWidth * (maxCount - 1), 1);
+	var value = Math.floor(max / 5 * 2);
+	if (Math.floor(max / 5 * 2) % 2 != 0) value++; // even value
+	if (value > 0) {
+		ctx.fillText(value, 0, gridHeight - Math.floor(value * coef));
+		ctx.fillRect(17, gridHeight - Math.floor(value * coef) - textHeight / 2, barWidth * (maxCount - 1), 1);
+	}
 
-	ctx.fillText(Math.floor(((gridHeight / 5) * 4) / coef), 0, Math.floor(gridHeight / 5) + textHeight / 2 - 1);
-	ctx.fillRect(17, Math.floor(gridHeight / 5), barWidth * (maxCount - 1), 1);
+	var value = value * 2;
+	if (value > 0) {
+		ctx.fillText(value, 0, gridHeight - Math.floor(value * coef));
+		ctx.fillRect(17, gridHeight - Math.floor(value * coef) - textHeight / 2, barWidth * (maxCount - 1), 1);
+	}
 
 	// lines
 	for (var j = 0; j < values.length; j++) {
