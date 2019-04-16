@@ -106,7 +106,7 @@ void loop()
   }
 
   // Try to reconnect to WiFi
-  if (millis() - reconnectTimer > 5 * MILLIS_IN_A_SECOND)
+  if (millis() - reconnectTimer > 15 * MILLIS_IN_A_SECOND)
   {
     reconnectTimer = millis();
     if (wifiMulti.run() != WL_CONNECTED)

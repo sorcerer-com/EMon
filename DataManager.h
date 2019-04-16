@@ -59,8 +59,8 @@ class DataManagerClass
         {
             timer = millis();
 
-            // if time isn't received in the setup, try again every 5th second
-            if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 5 == 0)
+            // if time isn't received in the setup, try again every 15th second
+            if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 15 == 0)
                 setStartTime(getTime());
 
             date_time dt = getCurrentTime();

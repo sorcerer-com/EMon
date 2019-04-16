@@ -10,28 +10,28 @@
 
 class WebHandler
 {
-  private:
+private:
     ESP8266WebServer &server;
     bool updated = false;
 
-  public:
+public:
     WebHandler(ESP8266WebServer &server) : server(server)
     {
         setup();
     }
 
-  private:
+private:
     void setup()
     {
         SPIFFS.begin();
 
         server.on("/login", HTTP_GET, [&]() { handleLogin(HTTP_GET); });
         server.on("/login", HTTP_POST, [&]() { handleLogin(HTTP_POST); });
-        server.on("/data.js", [&]() { handleDataFile(); });
+        server.on("/data.js", HTTP_GET, [&]() { handleDataFile(); });
         server.on("/settings", HTTP_POST, [&]() { handleSettings(); }, [&]() { handleUpdate(); });
-        server.on("/raw", [&]() { handleRaw(); });
-        server.on("/data", [&]() { handleRawData(); });
-        server.on("/restart", [&]() { handleRestart(); });
+        server.on("/raw", HTTP_GET, [&]() { handleRaw(); });
+        server.on("/data", HTTP_GET, [&]() { handleRawData(); });
+        server.on("/restart", HTTP_GET, [&]() { handleRestart(); });
 
         server.onNotFound([&]() {
             if (!handleFileRead(server.uri()))
@@ -311,7 +311,7 @@ class WebHandler
             const String &value = server.arg(i);
             DEBUGLOG("WebHandler", "Set setting %s: %s", name.c_str(), value.c_str());
 
-            if (!name.endsWith("[]"))
+            if (i > 0 && name != server.argName(i - 1))
                 listParamIdx = 0;
 
             // basic settings
