@@ -700,7 +700,7 @@ private:
 
         digitalWrite(LED_BUILTIN, LOW);
 
-        String result = "[";
+        String result = "[\n";
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
             uint32_t values[TARIFFS_COUNT];
@@ -708,10 +708,25 @@ private:
             uint32_t sum = 0;
             for (int t = 0; t < TARIFFS_COUNT; t++)
                 sum += values[t];
-            result += "[" + String(DataManager.getEnergy(m)) + ", ";
-            result += String(sum * 0.01) + "]";
+
+            // power usage
+            result += "\t{\n";
+            result += "\t\t \"name\": \"PowerUsage" + String(m + 1) + "\",\n";
+            result += "\t\t \"value\": " + String(DataManager.getEnergy(m)) + ",\n";
+            result += "\t\t \"aggrType\": \"avg\",\n";
+            result += "\t\t \"desc\": \"Power usage for: " + String(DataManager.data.settings.monitorsNames[m]) + "\"\n";
+            result += "\t},\n";
+
+            // consumed power
+            result += "\t{\n";
+            result += "\t\t \"name\": \"ConsumedPower" + String(m + 1) + "\",\n";
+            result += "\t\t \"value\": " + String(sum * 0.01) + ",\n";
+            result += "\t\t \"aggrType\": \"sum\",\n";
+            result += "\t\t \"desc\": \"Consumed power for: " + String(DataManager.data.settings.monitorsNames[m]) + "\"\n";
+            result += "\t}";
             if (m < MONITORS_COUNT - 1)
-                result += ", ";
+                result += ",";
+            result += "\n";
         }
         result += "]";
 
