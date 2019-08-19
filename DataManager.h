@@ -57,6 +57,12 @@ class DataManagerClass
 
         if (millis() - timer > MILLIS_IN_A_MINUTE)
         {
+            // if millis rollover then fix the start time by re-setting
+            if (timer > millis())
+            {
+                startTime = 0;
+                DEBUGLOG("DataManager", "Millis rollover")
+            }
             timer = millis();
 
             // if time isn't received in the setup, try again every 15th second
