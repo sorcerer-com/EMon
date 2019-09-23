@@ -10,7 +10,7 @@
 
 class DataManagerClass
 {
-  private:
+private:
     uint32_t startTime;
     uint32_t timer;
 
@@ -20,7 +20,7 @@ class DataManagerClass
     EnergyMonitor monitor3;
     EnergyMonitor monitor4;
 
-  public:
+public:
     Data data;
 
     DataManagerClass() : monitor1(ads, 0), monitor2(ads, 1), monitor3(ads, 2), monitor4(ads, 3)
@@ -203,7 +203,7 @@ class DataManagerClass
         return true;
     }
 
-  private:
+private:
     void distributeData(const date_time &dt)
     {
         if (dt.Day == data.lastSaveDay) // if not the first update for the new day
@@ -252,7 +252,8 @@ class DataManagerClass
         if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
             dt.Month > data.lastSaveMonth + 1)
         {
-            data.lastSaveMonth++;
+            if (dt.Month > data.lastSaveMonth)
+                data.lastSaveMonth++;
 
             DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
             for (int i = 0; i < MONITORS_COUNT; i++)

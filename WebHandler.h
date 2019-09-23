@@ -101,7 +101,6 @@ private:
 
         digitalWrite(LED_BUILTIN, LOW);
 
-        DEBUGLOG("WebHandler", "Generating data.js");
         unsigned long timer = millis();
         String result = SF("var data = {};\n");
         result += SF("data.monitorsCount = ") + String(MONITORS_COUNT) + SF(";\n");
