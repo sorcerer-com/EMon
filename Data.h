@@ -21,7 +21,7 @@ extern "C" uint32_t _SPIFFS_end;
 
 class Data
 {
-  public:
+public:
     // in 0.01 W
     uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
     uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
@@ -133,7 +133,7 @@ class Data
         }
     }
 
-    void reset(const bool &includeMinutesBuffer = false)
+    void reset()
     {
         DEBUGLOG("Data", "Reset data");
 

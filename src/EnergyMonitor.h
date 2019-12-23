@@ -99,7 +99,7 @@ class EnergyMonitor
             sumI += sqI;
         }
 
-        temp_irms = sqrt(sumI / samplesCount) * multiplier / 26;
+        temp_irms = sqrt(sumI / samplesCount) * multiplier / 21;
 
         //Reset accumulators
         sumI = 0;

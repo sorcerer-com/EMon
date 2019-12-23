@@ -30,6 +30,8 @@ public:
 
         EEPROM.begin(4096);
         data.readEEPROM();
+        if (data.startTime == -1) // reset data if EEPROM is empty
+            data.reset();
     }
 
     void setup()
@@ -89,7 +91,7 @@ public:
                         if (data.minutesBuffer[m][i] != 0xFFFFFFFF)
                             sum += data.minutesBuffer[m][i];
                     }
-                    data.hours[prevHour][m] = sum * data.settings.coefficient;
+                    data.hours[prevHour][m] = sum;
 
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
                              prevHour, m, data.hours[prevHour][m]);
@@ -107,13 +109,13 @@ public:
 
     inline double getCurrent(const int &monitorIdx)
     {
-        return getMonitor(monitorIdx).current;
+        return getMonitor(monitorIdx).current * data.settings.coefficient;
     }
 
     inline double getEnergy(const int &monitorIdx)
     {
         EnergyMonitor &monitor = getMonitor(monitorIdx);
-        return monitor.current * monitor.voltage;
+        return monitor.current * monitor.voltage * data.settings.coefficient;
     }
 
     inline uint32_t getCurrentHourEnergy(const int &monitorIdx)
@@ -209,6 +211,8 @@ private:
         if (dt.Day == data.lastSaveDay) // if not the first update for the new day
             return;
         data.lastSaveDay = dt.Day;
+        // re-sync current time once per day
+        startTime = 0;
 
         int year = dt.Year;
         int prevMonth = dt.Month - 1;

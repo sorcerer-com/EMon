@@ -453,7 +453,7 @@ private:
         HTTPUpload &upload = server.upload();
         int command = U_FLASH;
         if (upload.name == "update_spiffs")
-            command = U_SPIFFS;
+            command = U_FS;
 
         if (upload.status == UPLOAD_FILE_START)
         {

@@ -1,3 +1,8 @@
+/*
+  1) Upload code to the device through Arduino IDE
+  2) Upload spiffs image to the device
+*/
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPUpdateServer.h>
@@ -15,7 +20,7 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
-const uint8_t buttonPin = 0;
+const uint8_t buttonPin = 0; // GPIO0 / D3
 unsigned long buttonTimer = 0;
 
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
@@ -140,6 +145,22 @@ void loop()
     {
       WiFi.mode(WIFI_STA);
       DEBUGLOG("EMonitor", "Reconnected WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    }
+  }
+
+  // set wifi credentials by serial
+  if (Serial.available())
+  {
+    if (Serial.readString() == "set wifi")
+    {
+      Serial.println("Waiting for wifi ssid...");
+      while(!Serial.available()) { delay(1000); }
+      strcpy(DataManager.data.settings.wifi_ssid, Serial.readString().c_str());
+      Serial.println("Waiting for wifi passphrase...");
+      while(!Serial.available()) { delay(1000); }
+      strcpy(DataManager.data.settings.wifi_passphrase, Serial.readString().c_str());
+      DataManager.data.writeEEPROM(true);
+      ESP.restart();
     }
   }
 }
