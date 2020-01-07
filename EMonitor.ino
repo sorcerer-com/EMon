@@ -1,6 +1,6 @@
 /*
-  1) Upload code to the device through Arduino IDE
-  2) Upload spiffs image to the device
+  1) Upload code to the device
+  2) Upload spiffs image to the device through "/update"
 */
 
 #include <ESP8266WiFi.h>

@@ -58,7 +58,7 @@ private:
                 DEBUGLOG("WebHandler", "Login");
                 // set cookie with hash of remoteIp and password with max age 20 min
                 String hash = sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
-                server.sendHeader("Set-Cookie", hash + ";Max-Age=1200;path=/");
+                server.sendHeader("Set-Cookie", hash + ";Max-Age=1200;path=./");
 
                 server.sendHeader("Location", server.arg("redirect"), true);
                 server.send(302, "text/plain", "");
@@ -66,8 +66,8 @@ private:
             else
             {
                 DEBUGLOG("WebHandler", "Wrong password");
-                server.sendHeader("Set-Cookie", "login fail;Max-Age=3;path=/");
-                server.sendHeader("Location", "/", true);
+                server.sendHeader("Set-Cookie", "login fail;Max-Age=3;path=./");
+                server.sendHeader("Location", "./", true);
                 server.send(302, "text/plain", "");
             }
         }
@@ -88,7 +88,7 @@ private:
 
         if (!res && redirect)
         {
-            server.sendHeader("Location", "/", true);
+            server.sendHeader("Location", "./", true);
             server.send(302, "text/plain", "");
         }
         return res;
@@ -414,7 +414,7 @@ private:
             DEBUGLOG("WebHandler", response.c_str());
 
             server.client().setNoDelay(true);
-            response = SF("<META http-equiv=\"refresh\" content=\"15;URL=/\">") + response + SF("! Rebooting...\n");
+            response = SF("<META http-equiv=\"refresh\" content=\"15;URL=./\">") + response + SF("! Rebooting...\n");
             server.send(200, "text/html", response);
             delay(100);
             server.client().stop();
@@ -426,7 +426,7 @@ private:
             if (restart)
             {
                 server.client().setNoDelay(true);
-                server.send(200, "text/html", SF("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));
+                server.send(200, "text/html", SF("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
                 delay(100);
                 server.client().stop();
                 ESP.restart();
@@ -740,7 +740,7 @@ private:
 
         DEBUGLOG("WebHandler", "Restart");
         server.client().setNoDelay(true);
-        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=/\">Rebooting...\n"));
+        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
         delay(100);
         server.client().stop();
         ESP.restart();

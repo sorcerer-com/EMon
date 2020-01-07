@@ -22,16 +22,16 @@
 
 			if (windowWidth < 700) {
 				// mobile
-				redirect = "m/consumption.html";
+				redirect = "./m/consumption.html";
 			}
 			else {
 				// desktop
-				redirect = "d/consumption.html";
+				redirect = "./d/consumption.html";
 			}
 			$("input[name=redirect]").val(redirect);
 			$(".pages").hide();
 			
-			$.get("/login", function(data, status, xhr) {
+			$.get("./login", function(data, status, xhr) {
 				if (xhr.status == 200) {
 					window.location.replace(redirect);
 				}		
@@ -50,7 +50,7 @@
 	<div class="pages">
 		<section class="section-settings">
 			<p class="section-title">Login</p>
-			<form id="wifi_settings" action="/login" method="post">
+			<form id="wifi_settings" action="./login" method="post">
 				<p>Password:</p>
 				<input type="password" name="password" maxlength="10" autofocus/>
 				<input type="hidden" name="redirect"/>
