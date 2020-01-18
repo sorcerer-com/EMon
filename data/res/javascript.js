@@ -16,13 +16,23 @@ else {
 }
 
 $("header").ready(function () {
-	if (!sessionStorage.data)
-		$("header").append("(loading...)");
+	if (!sessionStorage.data) {
+		$("header").append("<span>(loading...)</span>");
+		$("header span:last-child").css("font-size", "0.8em");
+	}
 });
 
 $(window).on("load", function () {
-	$("header").html($("header").html().replace("(loading...)", ""))
-	
+	$("header span:last-child").remove();
+
+	// show current time warning
+	var date = new Date(data.time);
+	date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+	if (new Date() - date > 60 * 1000) { // if time difference is more than 1 minute
+		$("header").append("<a href='settings.html'>(set current time)</a>");
+		$("header a:last-child").css("font-size", "0.8em").css("color", "red");
+	}
+
 	// data isn't loaded
 	try {
 		if (data == undefined) {
@@ -268,7 +278,7 @@ $(window).on("load", function () {
 		if (data.settings.monitorsNames[m] != "") {
 			$(`.section-title.last-24-hours-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
 		}
-		
+
 		// total
 		var total = 0;
 		var values = [];
@@ -296,7 +306,7 @@ $(window).on("load", function () {
 				.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 		}
 	}
-	
+
 	//// Last month per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
@@ -437,7 +447,7 @@ function drawLast24Hours(canvasName, monitorIdx) {
 		for (var h = 0; h < 24; h++) {
 			var hour = (dt.getUTCHours() + h) % 24;
 			labels.push(hour);
-			values.push(0);			
+			values.push(0);
 			if (monitorIdx != undefined) {
 				values[h] = toKilo(data.hours[monitorIdx][hour]);
 			}

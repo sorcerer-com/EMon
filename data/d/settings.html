@@ -4,7 +4,7 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<meta name='theme-color' content='#1995AD'/>  <!-- Mobile browsers theme color -->
+	<meta name='theme-color' content='#1995AD' /> <!-- Mobile browsers theme color -->
 	<link rel="icon" href="../favicon.ico" type="image/x-icon">
 
 	<title>Energy Monitor</title>
@@ -36,6 +36,7 @@
 	</header>
 
 	<script>
+		var date, startDate;
 		$(window).on("load", function () {
 			for (var key in data.settings) {
 				var value = data.settings[key];
@@ -54,13 +55,21 @@
 					}
 				}
 			}
-			var date = new Date(data.time);
+			startDate = new Date();
+			date = new Date(data.time);
 			date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-			$("#time").append(date.toLocaleString());
-			
+			refreshTime();
+
 			// refresh data next time
 			sessionStorage.removeItem("data");
 		});
+		function refreshTime() {
+			var d = new Date(date);
+			var delta = new Date() - startDate;
+			d.setMilliseconds(d.getMilliseconds() + delta);
+			$("#time span").text(d.toLocaleString());
+			setTimeout(refreshTime, 1000);
+		}
 		function check(input, name) {
 			var input2 = document.getElementsByName(name)[0];
 			if (input.value != input2.value) {
@@ -71,8 +80,12 @@
 				input2.setCustomValidity('');
 			}
 		}
+		function setTime() {
+			$(`input[name='time']`)[0].value = Math.floor(new Date().getTime() / 1000);
+			$(`input[name='timeZone']`)[1].value = -(new Date().getTimezoneOffset() / 60);
+		}
 	</script>
-			
+
 	<div class="pages">
 		<section class="section-settings">
 			<p class="section-title">WiFi Settings</p>
@@ -93,7 +106,7 @@
 				<input type="submit" value="Save">
 			</form>
 		</section>
-		
+
 		<section class="section-settings">
 			<p class="section-title">Base Settings</p>
 			<form id="base_settings" action="/settings" method="post">
@@ -126,14 +139,16 @@
 				<input type="submit" value="Save">
 			</form>
 		</section>
-		
+
 		<section class="section-settings">
 			<p class="section-title">Advanced Settings</p>
 			<form id="advanced_settings" action="/settings" method="post" enctype="multipart/form-data">
 				<p>New Password:</p>
-				<input type="password" name="password" maxlength="10" value="*****" oninput="check(this, 'confirm_password')">
+				<input type="password" name="password" maxlength="10" value="*****"
+					oninput="check(this, 'confirm_password')">
 				<p>Confirm Password:</p>
-				<input type="password" name="confirm_password" maxlength="10" value="*****" oninput="check(this, 'password')">
+				<input type="password" name="confirm_password" maxlength="10" value="*****"
+					oninput="check(this, 'password')">
 				<p title="Power consumption tune coefficient">Coefficient:</p>
 				<input type="number" name="coefficient" min="0" step="0.01" required>
 				<p>Update Code:</p>
@@ -142,13 +157,14 @@
 				<input type="file" name="update_spiffs" accept=".image">
 				<input type="submit" value="Save">
 			</form>
-			<hr/>
+			<hr />
 			<form id="update_time" action="/settings" method="post">
-				<p id="time">Time of refresh: </p>
+				<p id="time">Current time:&nbsp;<span></span></p>
 				<input type="hidden" name="time" value="">
-				<input type="submit" value="Update time" onclick="$(`input[name='time']`)[0].value = Math.floor(new Date().getTime() / 1000)">
+				<input type="hidden" name="timeZone" min="-11" max="12" value="">
+				<input type="submit" value="Update time" onclick="setTime()">
 			</form>
-			<hr/>
+			<hr />
 			<form id="factory_reset" action="/settings" method="post">
 				<input type="hidden" name="factory_reset" value="true">
 				<input type="submit" value="Factory Reset" onclick="return confirm('Are you sure?')">
