@@ -459,8 +459,13 @@ private:
         {
             WiFiUDP::stopAll();
             DEBUGLOG("WebHandler", "Update: %s", upload.filename.c_str());
-            uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-            if (!Update.begin(maxSketchSpace, command)) //start with max available size
+            uint32_t maxSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+            if (command == U_FS)
+            {
+                maxSpace = ((size_t)&_FS_end - (size_t)&_FS_start);
+                close_all_fs();
+            }
+            if (!Update.begin(maxSpace, command)) //start with max available size
             {
 #ifdef DEBUG
                 Update.printError(Serial);
