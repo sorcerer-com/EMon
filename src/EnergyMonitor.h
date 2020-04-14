@@ -1,11 +1,11 @@
-#ifndef MY_EMON_H
-#define MY_EMON_H
+#ifndef ENERGY_MONITOR_H
+#define ENERGY_MONITOR_H
 
 #include "ADS1015.h"
 
 class EnergyMonitor
 {
-  private:
+private:
     ADS1115 &ads;
     uint8_t channel = 0;
 
@@ -18,8 +18,15 @@ class EnergyMonitor
     uint32_t timer = 0;
     uint64_t power = 0;
 
-  public:
-    const uint8_t voltage = 230; // V
+public:
+    const double voltage() const
+    {
+#ifndef VOLTAGE_MONITOR
+        return 220;
+#else
+        return VoltageMonitor.voltage;
+#endif
+    }
     double current = 0.0;
 
     EnergyMonitor(ADS1115 &_ads, uint8_t _channel) : ads(_ads)
@@ -39,7 +46,7 @@ class EnergyMonitor
         current = irms;
         if (irms < 0.3) // noise
             irms = 0.0;
-        power += round(irms * voltage);
+        power += round(irms * voltage());
         counter++;
         //DEBUGLOG("EnergyMonitor", "Channel: %d, Irms: %f, power: %d in %d counts",
         //         channel, irms, power, counter);
@@ -70,7 +77,7 @@ class EnergyMonitor
         return energy;
     }
 
-  private:
+private:
     int16_t sampleI;
     double offsetI = (double)(2 << 13) * 3.3 / 4.096; // half signed 16bit * (3.3V / 4.096V (ADS))
     double filteredI;
@@ -99,7 +106,7 @@ class EnergyMonitor
             sumI += sqI;
         }
 
-        temp_irms = sqrt(sumI / samplesCount) * multiplier / 21;
+        temp_irms = sqrt(sumI / samplesCount) * multiplier / 20;
 
         //Reset accumulators
         sumI = 0;

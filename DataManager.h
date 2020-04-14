@@ -6,6 +6,9 @@
 #include "Data.h"
 #include "src/NTPClient.h"
 #include "src/ADS1015.h"
+#ifdef VOLTAGE_MONITOR
+#include "src/VoltageMonitor.h"
+#endif
 #include "src/EnergyMonitor.h"
 
 class DataManagerClass
@@ -56,6 +59,9 @@ public:
     {
         for (int m = 0; m < MONITORS_COUNT; m++)
             getMonitor(m).update();
+#ifdef VOLTAGE_MONITOR
+        VoltageMonitor.update();
+#endif
 
         if (millis() - timer > MILLIS_IN_A_MINUTE)
         {
@@ -107,6 +113,11 @@ public:
         }
     }
 
+    inline double getVoltage()
+    {
+        return getMonitor(0).voltage(); // it's static
+    }
+
     inline double getCurrent(const int &monitorIdx)
     {
         return getMonitor(monitorIdx).current * data.settings.coefficient;
@@ -115,7 +126,7 @@ public:
     inline double getEnergy(const int &monitorIdx)
     {
         EnergyMonitor &monitor = getMonitor(monitorIdx);
-        return monitor.current * monitor.voltage * data.settings.coefficient;
+        return monitor.current * monitor.voltage() * data.settings.coefficient;
     }
 
     inline uint32_t getCurrentHourEnergy(const int &monitorIdx)
@@ -256,8 +267,7 @@ private:
         if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
             dt.Month > data.lastSaveMonth + 1)
         {
-            if (dt.Month > data.lastSaveMonth)
-                data.lastSaveMonth++;
+            data.lastSaveMonth = dt.Month;
 
             DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
             for (int i = 0; i < MONITORS_COUNT; i++)

@@ -78,6 +78,17 @@
 						<p class="cr-current-usage monitor-2">Monitor 2 Usage: </p>
 						<p class="cr-current-usage monitor-3">Monitor 3 Usage: </p>
 						<p class="cr-current-usage monitor-4">Monitor 4 Usage: </p>
+						<script>
+							var span = document.currentScript.parentElement;
+							$(window).on("load", function () {
+								if ("voltage" in data.current) {
+									span.append(document.createElement("hr"));
+									var p = document.createElement("p");
+									p.innerHTML = "Voltage: " + data.current.voltage + " V";
+									span.append(p);
+								}
+							});
+						</script>
 					</span>
 				</div>
 			</section>

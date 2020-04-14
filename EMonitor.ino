@@ -11,6 +11,8 @@
 #include <FS.h>
 
 //#define REMOTE_DEBUG
+//#define VOLTAGE_MONITOR
+
 #include "src/RemoteDebugger.h"
 #include "DataManager.h"
 #include "WebHandler.h"

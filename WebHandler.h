@@ -175,6 +175,10 @@ private:
         }
         result += SF("\n");
 
+#ifdef VOLTAGE_MONITOR
+        result += SF("data.current.voltage = ") + DataManager.getVoltage() + SF(";\n\n");
+#endif
+
         result += SF("data.hours = [];\n");
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
@@ -562,7 +566,7 @@ private:
         result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF(", ");
         result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF(", ");
         result += SF("WiFi DNS: ") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF(", ");
-        result += SF("Data size: ") + String(sizeof(DataManager.data));
+        result += SF("Data size: ") + String(sizeof(DataManager.data) + SF("/4096"));
         result += SF("<br/>\n");
 
         result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
@@ -574,6 +578,7 @@ private:
             result += SF("Energy: ") + String(DataManager.getEnergy(m)) + SF(" W ");
             result += SF("<br/>\n");
         }
+        result += SF("Voltage: ") + String(DataManager.getVoltage()) + SF(" V <br/>\n");
         result += SF("<br/>");
 
         result += SF("<table style='width:100%'>\n");
@@ -706,6 +711,15 @@ private:
         digitalWrite(LED_BUILTIN, LOW);
 
         String result = "[\n";
+#ifdef VOLTAGE_MONITOR
+        // voltage
+        result += "\t{\n";
+        result += "\t\t \"name\": \"Voltage\",\n";
+        result += "\t\t \"value\": " + String(DataManager.getVoltage()) + ",\n";
+        result += "\t\t \"aggrType\": \"avg\",\n";
+        result += "\t\t \"desc\": \"Voltage value\"\n";
+        result += "\t},\n";
+#endif
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
             uint32_t values[TARIFFS_COUNT];
