@@ -16,6 +16,7 @@ class DataManagerClass
 private:
     uint32_t startTime;
     uint32_t timer;
+    bool internet; // if the device is connected to the Internet
 
     ADS1115 ads;
     EnergyMonitor monitor1;
@@ -30,6 +31,7 @@ public:
     {
         startTime = 0;
         timer = 0;
+        internet = false;
 
         EEPROM.begin(4096);
         data.readEEPROM();
@@ -43,7 +45,10 @@ public:
         for (int i = 0; i < 5; i++)
         {
             if (setStartTime(getTime()))
+            {
+                internet = true;
                 break;
+            }
         }
 
         date_time dt = getCurrentTime();
@@ -65,8 +70,8 @@ public:
 
         if (millis() - timer > MILLIS_IN_A_MINUTE)
         {
-            // if millis rollover then fix the start time by re-setting
-            if (timer > millis())
+            // if millis rollover then fix the start time by re-setting if there is internet
+            if (timer > millis() && internet)
             {
                 startTime = 0;
                 DEBUGLOG("DataManager", "Millis rollover")
@@ -75,7 +80,10 @@ public:
 
             // if time isn't received in the setup, try again every 15th second
             if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 15 == 0)
-                setStartTime(getTime());
+            {
+                if (setStartTime(getTime()))
+                    internet = true;
+            }
 
             date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
@@ -105,6 +113,7 @@ public:
 
                 distributeData(dt);
 
+                data.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
                 data.writeEEPROM();
             }
 
@@ -210,9 +219,9 @@ public:
         if (value == 0)
             return false;
 
+        data.startTime = value;
         startTime = value;
         startTime -= millis() / MILLIS_IN_A_SECOND;
-        data.startTime = startTime;
         return true;
     }
 
@@ -222,8 +231,9 @@ private:
         if (dt.Day == data.lastSaveDay) // if not the first update for the new day
             return;
         data.lastSaveDay = dt.Day;
-        // re-sync current time once per day
-        startTime = 0;
+        // re-sync current time once per day if there is internet
+        if (internet)
+            startTime = 0;
 
         int year = dt.Year;
         int prevMonth = dt.Month - 1;
