@@ -103,6 +103,7 @@ private:
 
         unsigned long timer = millis();
         String result = SF("var data = {};\n");
+        result += SF("data.version = '") + String(VERSION) + SF("';\n");
         result += SF("data.monitorsCount = ") + String(MONITORS_COUNT) + SF(";\n");
         result += SF("data.tariffsCount = ") + String(TARIFFS_COUNT) + SF(";\n");
 
@@ -533,7 +534,8 @@ private:
         if (month < 1)
             month += 12;
 
-        String result = SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
+        String result = SF("Version: ") + SF(VERSION) + SF("<br/>\n");
+        result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
         result += SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
         result += SF("WiFi AP: ") + WiFi.softAPSSID() + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum());
         result += SF("<br/>\n");
