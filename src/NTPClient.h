@@ -5,7 +5,7 @@
 
 #define DEFAULT_NTP_SERVER "pool.ntp.org" // Default international NTP server
 #define DEFAULT_NTP_PORT 123              // Default local udp port
-#define NTP_TIMEOUT 1500                  // Response timeout for NTP requests
+#define NTP_TIMEOUT 200                   // Response timeout for NTP requests
 
 // leap year calculator expects year argument as years offset from 1970
 #define LEAP_YEAR(Y) (((1970 + (Y)) > 0) && !((1970 + (Y)) % 4) && (((1970 + (Y)) % 100) || !((1970 + (Y)) % 400)))
@@ -91,7 +91,7 @@ uint32_t getTime()
     udp.begin(DEFAULT_NTP_PORT);
     DEBUGLOG("NTPClient", "Starting UDP (address: %s, port: %d)", DEFAULT_NTP_SERVER, udp.localPort());
     while (udp.parsePacket() > 0)
-        ; // discard any previously received packets
+        udp.flush(); // discard any previously received packets
 
     sendNTPpacket(DEFAULT_NTP_SERVER, udp, ntpPacketBuffer);
     uint32_t beginWait = millis();
@@ -159,7 +159,7 @@ inline uint8_t getMonthLength(const uint8_t &month, const uint8_t &year)
     }
 }
 
-inline String dateTimeToString(const date_time &dt, const bool& iso = false)
+inline String dateTimeToString(const date_time &dt, const bool &iso = false)
 {
     String result = String(dt.Year) + SF("-");
     if (dt.Month < 10)

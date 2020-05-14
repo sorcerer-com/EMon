@@ -56,7 +56,7 @@ public:
         date_time dt = getCurrentTime();
         DEBUGLOG("DataManager", "Start time: %s (%d)", dateTimeToString(dt).c_str(),
                  startTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
-        timer = millis() - dt.Second * MILLIS_IN_A_SECOND;
+        timer = millis();
 
         ads.setGain(GAIN_ONE); // 1x gain   +/- 4.096V  1 bit = 2mV      0.125mV
         ads.begin();
@@ -70,18 +70,26 @@ public:
         VoltageMonitor.update();
 #endif
 
-        if (millis() - timer > MILLIS_IN_A_MINUTE)
+        uint32_t elapsed = millis() - timer;
+        if (elapsed > MILLIS_IN_A_MINUTE)
         {
-            // if millis rollover then fix the start time by re-setting if there is internet
+            // if millis rollover
             if (timer > millis() && internet)
             {
-                startTime = 0;
-                DEBUGLOG("DataManager", "Millis rollover")
+                if (internet) // if there is internet fix the start time by reseting
+                    startTime = 0;
+                else
+                {
+                    // if there is no internet add max millis value to startTime and write to EEPROM
+                    startTime += ((uint32_t)-1) / MILLIS_IN_A_SECOND;
+                    data.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
+                    data.writeEEPROM(true);
+                }
+                DEBUGLOG("DataManager", "Millis rollover, internet: %d", internet)
             }
-            timer = millis();
 
-            // if time isn't received in the setup, try again every 15th second
-            if (startTime == 0 && (millis() / MILLIS_IN_A_SECOND) % 15 == 0)
+            // if time isn't received in the setup try again to get it
+            if (startTime == 0)
             {
                 if (setStartTime(getTime()))
                     internet = true;
@@ -89,6 +97,7 @@ public:
 
             date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
+            timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
 
             // if new hour begins
             if (dt.Hour != data.lastSaveHour)

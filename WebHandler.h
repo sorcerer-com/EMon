@@ -573,6 +573,7 @@ private:
 
         result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
         result += SF("<br/>\n<br/>\n");
+        result += SF("\n");
 
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
@@ -581,7 +582,8 @@ private:
             result += SF("<br/>\n");
         }
         result += SF("Voltage: ") + String(DataManager.getVoltage()) + SF(" V <br/>\n");
-        result += SF("<br/>");
+        result += SF("<br/>\n");
+        result += SF("\n");
 
         result += SF("<table style='width:100%'>\n");
         result += SF("\t<tr><td></td>");
@@ -592,6 +594,33 @@ private:
             result += SF("</td>");
         }
         result += SF("</tr>\n");
+        result += SF("\n");
+
+        result += SF("<tr><td>");
+        result += SF("Minutes:");
+        result += SF("</td></tr>\n");
+        for (int m = 0; m < MONITORS_COUNT; m++)
+        {
+            result += SF("\t<tr><td>");
+            result += SF("Monitor ") + String(m) + SF(": ");
+            result += SF("</td>");
+            for (int i = 0; i < 30; i++)
+            {
+                result += SF("<td>");
+                if (DataManager.data.minutesBuffer[m][i * 2] != 0xFFFFFFFF)
+                    result += toString(DataManager.data.minutesBuffer[m][i * 2]);
+                else
+                    result += "X";
+                result += "<br/>";
+                if (DataManager.data.minutesBuffer[m][i * 2 + 1] != 0xFFFFFFFF)
+                    result += toString(DataManager.data.minutesBuffer[m][i * 2 + 1]);
+                else
+                    result += "X";
+                result += SF("</td>");
+            }
+            result += SF("</tr>\n");
+        }
+        result += SF("\n");
 
         result += SF("<tr><td>");
         result += SF("Hours:");
@@ -616,8 +645,8 @@ private:
             }
             result += SF("</tr>\n");
         }
-
         result += SF("\n");
+
         result += SF("<tr><td>");
         result += SF("Days:");
         result += SF("</td></tr>\n");
@@ -648,8 +677,8 @@ private:
                 result += SF("</tr>\n");
             }
         }
-
         result += SF("\n");
+
         result += SF("<tr><td>");
         result += SF("Months:");
         result += SF("</td></tr>\n");
