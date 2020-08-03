@@ -44,7 +44,7 @@ public:
             return;
         irms /= batchesCount;
         current = irms;
-        if (irms < 0.3) // noise
+        if (irms < 0.2) // noise
             irms = 0.0;
         power += round(irms * voltage());
         counter++;
@@ -106,7 +106,7 @@ private:
             sumI += sqI;
         }
 
-        temp_irms = sqrt(sumI / samplesCount) * multiplier / 20;
+        temp_irms = sqrt(sumI / samplesCount) * multiplier / 20; // 24;
 
         //Reset accumulators
         sumI = 0;

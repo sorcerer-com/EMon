@@ -1,0 +1,28 @@
+ZMPT101B 2mA	1.08$
+Lolin32		3.13$
+
+Wemos		2.02$
+ADS1115		1.60$
+
+SCT-013-030	4.14$
+5V 700mA power	0.88$
+PCB 5pcs	1.74$ / 5 / 4 	= 0,09$
+10 F headers 40	0.87$ / 10 / 3 	= 0,03$
+Jacks 10 x 5 	4.08$ / 10 / 1.25 = 0,33$
+
+Case		1.25$
+Other 		1.00$
+
+Base price: 7,72$
+Price with ESP8266: 11,34$
+Price with ESP32: 10,85$
+Price with ESP32+Voltage: 11,93$
+
+
+board 9x12 / 18x25
+
+button holder	1g
+cover		10g
+box		17g
+30g
+
