@@ -1,26 +1,27 @@
 #ifndef WEB_HANDLER_H
 #define WEB_HANDLER_H
 
-#include <ESP8266WebServer.h>
+#include <WebServer.h>
 #include <FS.h>
 #include <StreamString.h>
-#include <Hash.h>
+// TODO: missing in ESP32
+//#include <Hash.h>
+#include<SPIFFS.h>
+#include<Update.h>
 
 #include "src/NTPClient.h"
 
 class WebHandler
 {
 private:
-    ESP8266WebServer &server;
+    WebServer &server;
     bool updated = false;
 
 public:
-    WebHandler(ESP8266WebServer &server) : server(server)
+    WebHandler(WebServer &server) : server(server)
     {
-        setup();
     }
 
-private:
     void setup()
     {
         SPIFFS.begin();
@@ -41,6 +42,7 @@ private:
         });
     }
 
+private:
     void handleLogin(const HTTPMethod &method) const
     {
         digitalWrite(LED_BUILTIN, LOW);
@@ -57,7 +59,7 @@ private:
             {
                 DEBUGLOG("WebHandler", "Login");
                 // set cookie with hash of remoteIp and password with max age 20 min
-                String hash = sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+                String hash = ""; // TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
                 server.sendHeader("Set-Cookie", hash + ";Max-Age=1200;path=./");
 
                 server.sendHeader("Location", server.arg("redirect"), true);
@@ -82,7 +84,7 @@ private:
         bool res = false;
         if (server.hasHeader("Cookie"))
         {
-            String hash = sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+            String hash = "";// TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
             res = (server.header("Cookie") == hash);
         }
 
@@ -361,7 +363,7 @@ private:
             }
             else if (name == "wifi_ip")
             {
-                IPAddress ip = 0;
+                IPAddress ip = INADDR_NONE;
                 ip.fromString(value);
                 if (DataManager.data.settings.wifi_ip != (uint32_t)ip)
                     restart = true;
@@ -369,7 +371,7 @@ private:
             }
             else if (name == "wifi_gateway")
             {
-                IPAddress ip = 0;
+                IPAddress ip = INADDR_NONE;
                 ip.fromString(value);
                 if (DataManager.data.settings.wifi_gateway != (uint32_t)ip)
                     restart = true;
@@ -377,7 +379,7 @@ private:
             }
             else if (name == "wifi_subnet")
             {
-                IPAddress ip = 0;
+                IPAddress ip = INADDR_NONE;
                 ip.fromString(value);
                 if (DataManager.data.settings.wifi_subnet != (uint32_t)ip)
                     restart = true;
@@ -385,7 +387,7 @@ private:
             }
             else if (name == "wifi_dns")
             {
-                IPAddress ip = 0;
+                IPAddress ip = INADDR_NONE;
                 ip.fromString(value);
                 if (DataManager.data.settings.wifi_dns != (uint32_t)ip)
                     restart = true;
@@ -453,6 +455,7 @@ private:
             return;
 
         digitalWrite(LED_BUILTIN, LOW);
+        /* TODO:
         // from ESP8266HTTPUpdateServer
         // handler for the file upload, get's the sketch bytes, and writes
         // them through the Update object
@@ -509,7 +512,7 @@ private:
             DEBUGLOG("WebHandler", "Update was aborted");
             if (upload.totalSize > 0)
                 updated = true;
-        }
+        }*/
         delay(0);
 
         digitalWrite(LED_BUILTIN, HIGH);
@@ -521,9 +524,6 @@ private:
             return;
 
         digitalWrite(LED_BUILTIN, LOW);
-
-        FSInfo fs_info;
-        SPIFFS.info(fs_info);
 
         date_time dt = DataManager.getCurrentTime();
         uint32_t values[TARIFFS_COUNT];
@@ -537,7 +537,7 @@ private:
         String result = SF("Version: ") + SF(VERSION) + SF("<br/>\n");
         result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
         result += SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
-        result += SF("WiFi AP: ") + WiFi.softAPSSID() + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum());
+        result += SF("WiFi AP: ") + SF("EnergyMonitor_") + String((unsigned long)ESP.getEfuseMac(), 16) + SF(", ") + WiFi.softAPIP().toString() + SF(", ") + String(WiFi.softAPgetStationNum());
         result += SF("<br/>\n");
 
         result += "Local Time: ";
@@ -571,7 +571,7 @@ private:
         result += SF("Data size: ") + String(sizeof(DataManager.data) + SF("/4096"));
         result += SF("<br/>\n");
 
-        result += SF("SPIFFS: ") + String(fs_info.usedBytes) + SF("/") + String(fs_info.totalBytes);
+        result += SF("SPIFFS: ") + String(SPIFFS.usedBytes()) + SF("/") + String(SPIFFS.totalBytes());
         result += SF("<br/>\n<br/>\n");
         result += SF("\n");
 

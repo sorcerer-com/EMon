@@ -34,11 +34,6 @@ public:
         startTime = 0;
         timer = 0;
         internet = false;
-
-        EEPROM.begin(4096);
-        data.readEEPROM();
-        if (data.startTime == -1) // reset data if EEPROM is empty
-            data.reset();
     }
 
     void setup()

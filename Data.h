@@ -84,11 +84,13 @@ public:
 
         if (includeMinutesBuffer)
         {
+            /* TODO:
             // read minutes buffer from the end of the EEPROM
             uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
             noInterrupts();
             spi_flash_read(EEPROM_end - sizeof(minutesBuffer), (uint32_t *)minutesBuffer, sizeof(minutesBuffer));
             interrupts();
+            */
         }
     }
 
@@ -122,10 +124,12 @@ public:
         // write minutes buffer in the end of the EEPROM
         if (includeMinutesBuffer)
         {
+            /* TODO:
             uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
             noInterrupts();
             spi_flash_write(EEPROM_end - sizeof(minutesBuffer), reinterpret_cast<uint32_t *>(minutesBuffer), sizeof(minutesBuffer));
             interrupts();
+            */
         }
         else
         {
@@ -176,10 +180,12 @@ public:
 
         minutesBuffer[monitorIdx][valueIdx] = value;
 
+        /* TODO:
         // write only this value to EEPROM
         uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
         int idx = monitorIdx * 60 + valueIdx;
         return spi_flash_write(EEPROM_end - sizeof(minutesBuffer) + idx * sizeof(value), &value, sizeof(value)) == SPI_FLASH_RESULT_OK;
+        */
     }
 };
 

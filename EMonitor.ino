@@ -3,25 +3,27 @@
   2) Upload spiffs image to the device through "/update"
 */
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
-#include <ESP8266HTTPUpdateServer.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
+#include <WiFi.h>
+#include <WiFiMulti.h>
+// TODO: missing in ESP32
+//#include <HTTPUpdateServer.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
 #include <FS.h>
 
-//#define REMOTE_DEBUG
+#define DEBUG
 //#define VOLTAGE_MONITOR
 
 #include "src/RemoteDebugger.h"
 #include "DataManager.h"
 #include "WebHandler.h"
 
-ESP8266WiFiMulti wifiMulti;
-ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer httpUpdater;
+WiFiMulti wifiMulti;
+WebServer server(80);
+//ESP8266HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
+// TODO: revise all pins / ADS too
 const uint8_t buttonPin = 0; // GPIO0 / D3
 unsigned long buttonTimer = 0;
 
@@ -35,11 +37,21 @@ void setup()
 #endif
 
   pinMode(buttonPin, INPUT_PULLUP);
+  
+  // TODO: need to be in setup not in constructor (before connect)
+  if (EEPROM.begin(4096))
+  {
+      DataManager.data.readEEPROM();
+      if (DataManager.data.startTime == -1) // reset data if EEPROM is empty
+          DataManager.data.reset();
+  }
+  else
+      DataManager.data.reset();
 
   // setup WiFi
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
-  WiFi.hostname("EnergyMonitor");
+  WiFi.setHostname("EnergyMonitor"); // TODO: test
   if (WiFi.config(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
                   DataManager.data.settings.wifi_subnet, DataManager.data.settings.wifi_dns))
   {
@@ -80,16 +92,16 @@ void setup()
   server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
 
-  httpUpdater.setup(&server, "admin", "admin");
+  //httpUpdater.setup(&server, "admin", "admin");
 
   DataManager.setup();
+  webHandler.setup();
 }
 
 void loop()
 {
   DataManager.update();
 
-  MDNS.update();
   server.handleClient();
 
   // Reset button
@@ -138,9 +150,9 @@ void loop()
           DEBUGLOG("EMonitor", "Cannot config Wifi AP");
         }
 
-        String ssid = SF("EnergyMonitor_") + String(ESP.getChipId(), HEX);
+        String ssid = SF("EnergyMonitor_") + String((unsigned long)ESP.getEfuseMac(), 16);
         WiFi.softAP(ssid.c_str(), "12345678");
-        DEBUGLOG("EMonitor", "AP WiFi: %s, IP: %s", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());
+        DEBUGLOG("EMonitor", "AP WiFi: %s, IP: %s", ssid.c_str(), WiFi.softAPIP().toString().c_str());
       }
     }
     else if (WiFi.getMode() != WIFI_STA)

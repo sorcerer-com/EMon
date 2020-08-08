@@ -14,7 +14,7 @@
 
 const int NTP_PACKET_SIZE = 48; // NTP time is in the first 48 bytes of message
 
-static const uint8_t monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}; // API starts months from 1, this array starts from 0
+static const uint8_t monthDays[] ={ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }; // API starts months from 1, this array starts from 0
 
 typedef struct
 {
@@ -89,7 +89,7 @@ uint32_t getTime()
 
     WiFiUDP udp;
     udp.begin(DEFAULT_NTP_PORT);
-    DEBUGLOG("NTPClient", "Starting UDP (address: %s, port: %d)", DEFAULT_NTP_SERVER, udp.localPort());
+    DEBUGLOG("NTPClient", "Starting UDP (address: %s, port: %d)", DEFAULT_NTP_SERVER, DEFAULT_NTP_PORT);
     while (udp.parsePacket() > 0)
         udp.flush(); // discard any previously received packets
 
