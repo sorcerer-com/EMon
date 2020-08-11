@@ -5,8 +5,7 @@
 
 #include <WiFi.h>
 #include <WiFiMulti.h>
-// TODO: missing in ESP32
-//#include <HTTPUpdateServer.h>
+#include "src/HTTPUpdateServer.h"
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <FS.h>
@@ -20,7 +19,7 @@
 
 WiFiMulti wifiMulti;
 WebServer server(80);
-//ESP8266HTTPUpdateServer httpUpdater;
+HTTPUpdateServer httpUpdater;
 WebHandler webHandler(server);
 
 // TODO: revise all pins / ADS too
@@ -92,7 +91,7 @@ void setup()
   server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
 
-  //httpUpdater.setup(&server, "admin", "admin");
+  httpUpdater.setup(&server, "admin", "admin");
 
   DataManager.setup();
   webHandler.setup();
