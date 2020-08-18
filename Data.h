@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <EEPROM.h>
+#include <SPIFFS.h>
 
 #define SF(str) String(F(str))
 
@@ -17,21 +17,24 @@
 #define MONITOR_NAME_LENGTH 50
 #define PASSWORD_LENGTH 10
 
-extern "C" uint32_t _EEPROM_start;
-
 class Data
 {
 public:
-    // in 0.01 W
-    uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
-    uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
-    uint32_t hours[24][MONITORS_COUNT];
-    uint32_t startTime = 0;
-    uint8_t lastSaveHour = 0;
-    uint8_t lastSaveDay = 0;
-    uint8_t lastSaveMonth = 0;
+    struct
+    {
+        // in 0.01 W
+        uint32_t months[12][TARIFFS_COUNT][MONITORS_COUNT];
+        uint32_t days[31][TARIFFS_COUNT][MONITORS_COUNT];
+        uint32_t hours[24][MONITORS_COUNT];
+        uint32_t startTime = 0;
+        uint8_t lastSavedHour = 0;
+        uint8_t lastSavedDay = 0;
+        uint8_t lastSavedMonth = 0;
+    } base;
 
-    struct Settings
+    uint32_t minutes[MONITORS_COUNT][60]; // data for the last hour (per minute)
+
+    struct
     {
         // basic settings
         int8_t timeZone = 0;
@@ -55,85 +58,60 @@ public:
         // add new values in the end (in handleDataFile, handleSettings, handleRaw, reset below)
     } settings;
 
-    uint32_t minutesBuffer[MONITORS_COUNT][60]; // data for the last hour (per minute)
-
-    void readEEPROM(const bool &includeMinutesBuffer = true)
+    enum SaveFlags
     {
-        if (EEPROM.getDataPtr() == NULL) // if cannot read the EEPROM
-            return;
+        Base = 1 << 0,
+        Minutes = 1 << 1,
+        Settings = 1 << 2,
+        ResetMinutes = 1 << 3,
+    };
 
+    void load()
+    {
+        // TODO: check file location (10000 cycles) - use LittleFs?, external EEPROM
+        // TODO: when write new UI (SPIFFS) the data will be lost - use second partition?
         DEBUGLOG("Data", "Read data with size: %d", sizeof(*this));
-        int addr = 0;
-        EEPROM.get(addr, months);
-        addr += sizeof(months);
-        EEPROM.get(addr, days);
-        addr += sizeof(days);
-        EEPROM.get(addr, hours);
-        addr += sizeof(hours);
-        EEPROM.get(addr, startTime);
-        addr += sizeof(startTime);
-        EEPROM.get(addr, lastSaveHour);
-        addr += sizeof(lastSaveHour);
-        EEPROM.get(addr, lastSaveDay);
-        addr += sizeof(lastSaveDay);
-        EEPROM.get(addr, lastSaveMonth);
-        addr += sizeof(lastSaveMonth);
+        reset(); // set default values first
 
-        EEPROM.get(addr, settings);
-        addr += sizeof(settings);
+        if (SPIFFS.exists("/data/base.dat"))
+            readFile("/data/base.dat", (uint8_t *)&base, sizeof(base));
+        else
+            DEBUGLOG("Data", "Data file doesn't exist");
 
-        if (includeMinutesBuffer)
-        {
-            /* TODO:
-            // read minutes buffer from the end of the EEPROM
-            uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
-            noInterrupts();
-            spi_flash_read(EEPROM_end - sizeof(minutesBuffer), (uint32_t *)minutesBuffer, sizeof(minutesBuffer));
-            interrupts();
-            */
-        }
+        if (SPIFFS.exists("/data/minutes.dat"))
+            readFile("/data/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
+        else
+            DEBUGLOG("Data", "Minutes file doesn't exist");
+
+        if (SPIFFS.exists("/data/settings.dat"))
+            readFile("/data/settings.dat", (uint8_t *)&settings, sizeof(settings));
+        else
+            DEBUGLOG("Data", "Settings file doesn't exist");
     }
 
-    void writeEEPROM(const bool &includeMinutesBuffer = false)
+    void save(const int &saveFlags)
     {
-        DEBUGLOG("Data", "Write data with size: %d", sizeof(*this));
-        // clear the EEPROM data buffer first
-        memset(EEPROM.getDataPtr(), 0xFF, EEPROM.length());
-
-        int addr = 0;
-        EEPROM.put(addr, months);
-        addr += sizeof(months);
-        EEPROM.put(addr, days);
-        addr += sizeof(days);
-        EEPROM.put(addr, hours);
-        addr += sizeof(hours);
-        EEPROM.put(addr, startTime);
-        addr += sizeof(startTime);
-        EEPROM.put(addr, lastSaveHour);
-        addr += sizeof(lastSaveHour);
-        EEPROM.put(addr, lastSaveDay);
-        addr += sizeof(lastSaveDay);
-        EEPROM.put(addr, lastSaveMonth);
-        addr += sizeof(lastSaveMonth);
-
-        EEPROM.put(addr, settings);
-        addr += sizeof(settings);
-
-        EEPROM.commit();
-
-        // write minutes buffer in the end of the EEPROM
-        if (includeMinutesBuffer)
+        if (saveFlags & SaveFlags::Base)
         {
-            /* TODO:
-            uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
-            noInterrupts();
-            spi_flash_write(EEPROM_end - sizeof(minutesBuffer), reinterpret_cast<uint32_t *>(minutesBuffer), sizeof(minutesBuffer));
-            interrupts();
-            */
+            DEBUGLOG("Data", "Write base data with size: %d", sizeof(base));
+            writeFile("/data/base.dat", (uint8_t *)&base, sizeof(base));
         }
-        else
+
+        if (saveFlags & SaveFlags::Minutes)
         {
-            memset(minutesBuffer, 0xFF, sizeof(minutesBuffer));
+            DEBUGLOG("Data", "Write minutes data with size: %d", sizeof(minutes));
+            writeFile("/data/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
+        }
+        if (saveFlags & SaveFlags::ResetMinutes)
+        {
+            DEBUGLOG("Data", "Reset minutes data");
+            memset(minutes, 0xFF, sizeof(minutes));
+        }
+
+        if (saveFlags & SaveFlags::Settings)
+        {
+            DEBUGLOG("Data", "Write settings with size: %d", sizeof(settings));
+            writeFile("/data/settings.dat", (uint8_t *)&settings, sizeof(settings));
         }
     }
 
@@ -141,13 +119,15 @@ public:
     {
         DEBUGLOG("Data", "Reset data");
 
-        memset(months, 0, sizeof(months));
-        memset(days, 0, sizeof(days));
-        memset(hours, 0, sizeof(hours));
-        startTime = 0;
-        lastSaveHour = 0;
-        lastSaveDay = 0;
-        lastSaveMonth = 0;
+        memset(base.months, 0, sizeof(base.months));
+        memset(base.days, 0, sizeof(base.days));
+        memset(base.hours, 0, sizeof(base.hours));
+        base.startTime = 0;
+        base.lastSavedHour = 0;
+        base.lastSavedDay = 0;
+        base.lastSavedMonth = 0;
+
+        memset(minutes, 0xFF, sizeof(minutes));
 
         // basic settings
         settings.timeZone = 0;
@@ -168,24 +148,51 @@ public:
         settings.wifi_gateway = 0;
         settings.wifi_subnet = 0;
         settings.wifi_dns = 0;
-
-        memset(minutesBuffer, 0xFF, sizeof(minutesBuffer));
     }
 
-    inline bool writeToMinutesBuffer(const int &monitorIdx, const int &valueIdx, uint32_t value)
+private:
+    inline bool readFile(const char *path, uint8_t *buf, size_t size)
     {
-        if (monitorIdx < 0 || monitorIdx >= MONITORS_COUNT ||
-            valueIdx < 0 || valueIdx >= 60)
+        DEBUGLOG("Data", "Reading file: %s", path);
+
+        File file = SPIFFS.open(path, FILE_READ);
+        if (!file)
+        {
+            DEBUGLOG("Data", "Failed to open file for reading");
             return false;
+        }
 
-        minutesBuffer[monitorIdx][valueIdx] = value;
+        if (file.read(buf, size) != size)
+        {
+            DEBUGLOG("Data", "Read of the file failed");
+            file.close();
+            return false;
+        }
 
-        /* TODO:
-        // write only this value to EEPROM
-        uint32_t EEPROM_end = ((uint32_t)&_EEPROM_start - 0x40200000) + SPI_FLASH_SEC_SIZE - 1;
-        int idx = monitorIdx * 60 + valueIdx;
-        return spi_flash_write(EEPROM_end - sizeof(minutesBuffer) + idx * sizeof(value), &value, sizeof(value)) == SPI_FLASH_RESULT_OK;
-        */
+        file.close();
+        return true;
+    }
+
+    inline bool writeFile(const char *path, const uint8_t *buf, size_t size)
+    {
+        DEBUGLOG("Data", "Writing file: %s", path);
+
+        File file = SPIFFS.open(path, FILE_WRITE);
+        if (!file)
+        {
+            DEBUGLOG("Data", "Failed to open file for writing");
+            return false;
+        }
+
+        if (file.write(buf, size) != size)
+        {
+            DEBUGLOG("Data", "Write to file failed");
+            file.close();
+            return false;
+        }
+
+        file.close();
+        return true;
     }
 };
 

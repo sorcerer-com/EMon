@@ -24,8 +24,6 @@ public:
 
     void setup()
     {
-        SPIFFS.begin();
-
         server.on("/login", HTTP_GET, [&]() { handleLogin(HTTP_GET); });
         server.on("/login", HTTP_POST, [&]() { handleLogin(HTTP_POST); });
         server.on("/data.js", HTTP_GET, [&]() { handleDataFile(); });
@@ -111,7 +109,7 @@ private:
 
         date_time dt = DataManager.getCurrentTime();
         result += SF("data.time = '") + dateTimeToString(dt, true) + SF("';\n");
-        result += SF("data.startTime = ") + String(DataManager.data.startTime) + SF(";\n");
+        result += SF("data.startTime = ") + String(DataManager.data.base.startTime) + SF(";\n");
         result += SF("\n");
 
         result += SF("data.settings = {};\n");
@@ -189,7 +187,7 @@ private:
             result += SF("data.hours[") + String(m) + SF("] = [");
             for (int h = 0; h < 24; h++)
             {
-                result += String(DataManager.data.hours[h][m]);
+                result += String(DataManager.data.base.hours[h][m]);
                 if (h < 23)
                     result += SF(", ");
             }
@@ -208,7 +206,7 @@ private:
                 result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int d = 0; d < 31; d++)
                 {
-                    result += String(DataManager.data.days[d][t][m]);
+                    result += String(DataManager.data.base.days[d][t][m]);
                     if (d < 30)
                         result += SF(", ");
                 }
@@ -228,7 +226,7 @@ private:
                 result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int i = 0; i < 12; i++)
                 {
-                    result += String(DataManager.data.months[i][t][m]);
+                    result += String(DataManager.data.base.months[i][t][m]);
                     if (i < 11)
                         result += SF(", ");
                 }
@@ -402,7 +400,7 @@ private:
             else if (name == "factory_reset")
             {
                 DataManager.data.reset();
-                DataManager.data.writeEEPROM(true);
+                DataManager.data.save(Data::SaveFlags::Base | Data::SaveFlags::Minutes | Data::SaveFlags::Settings);
             }
         }
 
@@ -430,7 +428,7 @@ private:
         }
         else
         {
-            DataManager.data.writeEEPROM(true);
+            DataManager.data.save(Data::SaveFlags::Settings);
             if (restart)
             {
                 server.client().setNoDelay(true);
@@ -545,10 +543,10 @@ private:
         result += SF(" (millis: ") + String(millis()) + SF(")");
         result += SF("<br/>\n");
 
-        result += SF("StartTime: ") + String(DataManager.data.startTime) + SF(", ");
-        result += SF("LastSaveHour: ") + String(DataManager.data.lastSaveHour) + SF(", ");
-        result += SF("LastSaveDay: ") + String(DataManager.data.lastSaveDay) + SF(", ");
-        result += SF("LastSaveMonth: ") + String(DataManager.data.lastSaveMonth) + SF(", ");
+        result += SF("StartTime: ") + String(DataManager.data.base.startTime) + SF(", ");
+        result += SF("lastSavedHour: ") + String(DataManager.data.base.lastSavedHour) + SF(", ");
+        result += SF("lastSavedDay: ") + String(DataManager.data.base.lastSavedDay) + SF(", ");
+        result += SF("lastSavedMonth: ") + String(DataManager.data.base.lastSavedMonth) + SF(", ");
         result += SF("Tariffs: ");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
@@ -607,13 +605,13 @@ private:
             for (int i = 0; i < 30; i++)
             {
                 result += SF("<td>");
-                if (DataManager.data.minutesBuffer[m][i * 2] != 0xFFFFFFFF)
-                    result += toString(DataManager.data.minutesBuffer[m][i * 2]);
+                if (DataManager.data.minutes[m][i * 2] != 0xFFFFFFFF)
+                    result += toString(DataManager.data.minutes[m][i * 2]);
                 else
                     result += "X";
                 result += "<br/>";
-                if (DataManager.data.minutesBuffer[m][i * 2 + 1] != 0xFFFFFFFF)
-                    result += toString(DataManager.data.minutesBuffer[m][i * 2 + 1]);
+                if (DataManager.data.minutes[m][i * 2 + 1] != 0xFFFFFFFF)
+                    result += toString(DataManager.data.minutes[m][i * 2 + 1]);
                 else
                     result += "X";
                 result += SF("</td>");
@@ -634,7 +632,7 @@ private:
             {
                 result += SF("<td>");
                 if (i != dt.Hour)
-                    result += toString(DataManager.data.hours[i][m]) + SF(" ");
+                    result += toString(DataManager.data.base.hours[i][m]) + SF(" ");
                 else
                 {
                     result += SF("<font color='red'>");
@@ -665,7 +663,7 @@ private:
                 {
                     result += SF("<td>");
                     if (i != dt.Day - 1)
-                        result += toString(DataManager.data.days[i][t][m]) + SF(" ");
+                        result += toString(DataManager.data.base.days[i][t][m]) + SF(" ");
                     else
                     {
                         result += SF("<font color='red'>");
@@ -697,7 +695,7 @@ private:
                 {
                     result += SF("<td>");
                     if (i != month - 1)
-                        result += toString(DataManager.data.months[i][t][m]) + SF(" ");
+                        result += toString(DataManager.data.base.months[i][t][m]) + SF(" ");
                     else
                     {
                         result += SF("<font color='red'>");

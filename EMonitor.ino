@@ -37,13 +37,8 @@ void setup()
 
   pinMode(buttonPin, INPUT_PULLUP);
   
-  // TODO: need to be in setup not in constructor (before connect)
-  if (EEPROM.begin(4096))
-  {
-      DataManager.data.readEEPROM();
-      if (DataManager.data.startTime == -1) // reset data if EEPROM is empty
-          DataManager.data.reset();
-  }
+  if (SPIFFS.begin()) // TODO: if SPIFFS not ok, everything is broken not only data - message (in UI?)
+      DataManager.data.load();
   else
       DataManager.data.reset();
 
@@ -112,7 +107,7 @@ void loop()
     else if (millis() - buttonTimer > 5 * MILLIS_IN_A_SECOND)
     {
       DataManager.data.reset();
-      DataManager.data.writeEEPROM(true);
+      DataManager.data.save(Data::SaveFlags::Base | Data::SaveFlags::Minutes | Data::SaveFlags::Settings);
       server.client().stop();
       ESP.restart();
     }
@@ -172,7 +167,7 @@ void loop()
       Serial.println("Waiting for wifi passphrase...");
       while(!Serial.available()) { delay(1000); }
       strcpy(DataManager.data.settings.wifi_passphrase, Serial.readString().c_str());
-      DataManager.data.writeEEPROM(true);
+      DataManager.data.save(Data::SaveFlags::Settings);
       ESP.restart();
     }
   }

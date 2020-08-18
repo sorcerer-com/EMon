@@ -1,6 +1,3 @@
-ZMPT101B 2mA	1.08$
-Lolin32		3.13$
-
 Wemos		2.02$
 ADS1115		1.60$
 
@@ -13,10 +10,21 @@ Jacks 10 x 5 	4.08$ / 10 / 1.25 = 0,33$
 Case		1.25$
 Other 		1.00$
 
+-----
+ZMPT101B 2mA	1.08$
+Lolin32 lite	3.13$
+(Lolin32	3.99$)
+
+4 female 3.5mm cables	2*0.70$ = 1.40$
+EEPROM module		1.0$
+-----
+
 Base price: 7,72$
 Price with ESP8266: 11,34$
 Price with ESP32: 10,85$
 Price with ESP32+Voltage: 11,93$
+Price with ESP32+Voltage+3.5 cable+EEPROM: 14$
+
 
 
 board 9x12 / 18x25

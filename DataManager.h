@@ -77,8 +77,8 @@ public:
                 {
                     // if there is no internet add max millis value to startTime and write to EEPROM
                     startTime += ((uint32_t)-1) / MILLIS_IN_A_SECOND;
-                    data.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
-                    data.writeEEPROM(true);
+                    data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
+                    data.save(Data::SaveFlags::Base);
                 }
                 DEBUGLOG("DataManager", "Millis rollover, internet: %d", internet)
             }
@@ -95,9 +95,9 @@ public:
             timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
 
             // if new hour begins
-            if (dt.Hour != data.lastSaveHour)
+            if (dt.Hour != data.base.lastSavedHour)
             {
-                data.lastSaveHour = dt.Hour;
+                data.base.lastSavedHour = dt.Hour;
 
                 int prevHour = dt.Hour - 1;
                 if (prevHour < 0)
@@ -108,23 +108,24 @@ public:
                     uint32_t sum = 0;
                     for (int i = 0; i < 60; i++)
                     {
-                        if (data.minutesBuffer[m][i] != 0xFFFFFFFF)
-                            sum += data.minutesBuffer[m][i];
+                        if (data.minutes[m][i] != 0xFFFFFFFF)
+                            sum += data.minutes[m][i];
                     }
-                    data.hours[prevHour][m] = sum;
+                    data.base.hours[prevHour][m] = sum;
 
                     DEBUGLOG("DataManager", "Consumption for %d hour monitor %d: %d",
-                             prevHour, m, data.hours[prevHour][m]);
+                             prevHour, m, data.base.hours[prevHour][m]);
                 }
 
                 distributeData(dt);
 
-                data.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
-                data.writeEEPROM();
+                data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
+                data.save(Data::SaveFlags::Base | Data::SaveFlags::ResetMinutes);
             }
 
             for (int m = 0; m < MONITORS_COUNT; m++)
-                data.writeToMinutesBuffer(m, dt.Minute, getMonitor(m).getEnergy());
+                data.minutes[m][dt.Minute] =  getMonitor(m).getEnergy();
+            data.save(Data::SaveFlags::Minutes);
         }
     }
 
@@ -149,8 +150,8 @@ public:
         uint32_t sum = 0;
         for (int i = 0; i < 60; i++)
         {
-            if (data.minutesBuffer[monitorIdx][i] != 0xFFFFFFFF)
-                sum += data.minutesBuffer[monitorIdx][i];
+            if (data.minutes[monitorIdx][i] != 0xFFFFFFFF)
+                sum += data.minutes[monitorIdx][i];
         }
         return sum + getMonitor(monitorIdx).getEnergy(false);
     }
@@ -165,7 +166,7 @@ public:
         for (int h = 0; h <= dt.Hour; h++)
         {
             if (h != dt.Hour)
-                value = data.hours[h][monitorIdx];
+                value = data.base.hours[h][monitorIdx];
             else
                 value = getCurrentHourEnergy(monitorIdx);
 
@@ -206,7 +207,7 @@ public:
                     (dt.Day < data.settings.billDay && (d + 1 >= data.settings.billDay || d + 1 <= dt.Day)))
                 {
                     if (d != dt.Day - 1)
-                        values[t] += data.days[d][t][monitorIdx];
+                        values[t] += data.base.days[d][t][monitorIdx];
                     else
                         values[t] += currentDay[t];
                 }
@@ -216,7 +217,7 @@ public:
 
     inline date_time getCurrentTime() const
     {
-        uint32_t sTime = startTime != 0 ? startTime : data.startTime;
+        uint32_t sTime = startTime != 0 ? startTime : data.base.startTime;
         return breakTime(sTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
     }
 
@@ -225,7 +226,7 @@ public:
         if (value == 0)
             return false;
 
-        data.startTime = value;
+        data.base.startTime = value;
         startTime = value;
         startTime -= millis() / MILLIS_IN_A_SECOND;
         return true;
@@ -234,9 +235,9 @@ public:
 private:
     void distributeData(const date_time &dt)
     {
-        if (dt.Day == data.lastSaveDay) // if not the first update for the new day
+        if (dt.Day == data.base.lastSavedDay) // if not the first update for the new day
             return;
-        data.lastSaveDay = dt.Day;
+        data.base.lastSavedDay = dt.Day;
         // re-sync current time once per day if there is internet
         if (internet)
             startTime = 0;
@@ -260,30 +261,30 @@ private:
             for (int h = 0; h < 24; h++)
             {
                 if (h >= data.settings.tariffStartHours[0] && h < data.settings.tariffStartHours[1])
-                    sum[0] += data.hours[h][i];
+                    sum[0] += data.base.hours[h][i];
                 else if (h >= data.settings.tariffStartHours[1] && h < data.settings.tariffStartHours[2])
-                    sum[1] += data.hours[h][i];
+                    sum[1] += data.base.hours[h][i];
                 else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
-                    sum[2] += data.hours[h][i];
+                    sum[2] += data.base.hours[h][i];
             }
-            data.days[prevDay - 1][0][i] = sum[0];
-            data.days[prevDay - 1][1][i] = sum[1];
-            data.days[prevDay - 1][2][i] = sum[2];
+            data.base.days[prevDay - 1][0][i] = sum[0];
+            data.base.days[prevDay - 1][1][i] = sum[1];
+            data.base.days[prevDay - 1][2][i] = sum[2];
 
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, data.days[prevDay - 1][0][i]);
+                     prevDay, i, data.base.days[prevDay - 1][0][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, data.days[prevDay - 1][1][i]);
+                     prevDay, i, data.base.days[prevDay - 1][1][i]);
             DEBUGLOG("DataManager", "Consumption for %d day monitor %d: %d",
-                     prevDay, i, data.days[prevDay - 1][2][i]);
+                     prevDay, i, data.base.days[prevDay - 1][2][i]);
             yield();
         }
 
         // the data for the month is full or if we miss the bill day
-        if ((dt.Month != data.lastSaveMonth && dt.Day >= data.settings.billDay) ||
-            dt.Month > data.lastSaveMonth + 1)
+        if ((dt.Month != data.base.lastSavedMonth && dt.Day >= data.settings.billDay) ||
+            dt.Month > data.base.lastSavedMonth + 1)
         {
-            data.lastSaveMonth = dt.Month;
+            data.base.lastSavedMonth = dt.Month;
 
             DEBUGLOG("DataManager", "Save data for %d month", prevMonth);
             for (int i = 0; i < MONITORS_COUNT; i++)
@@ -293,12 +294,12 @@ private:
                     uint32_t sum = 0;
                     for (int d = 0; d < daysCount; d++)
                     {
-                        sum += data.days[d][t][i];
+                        sum += data.base.days[d][t][i];
                     }
-                    data.months[prevMonth - 1][t][i] = sum;
+                    data.base.months[prevMonth - 1][t][i] = sum;
 
                     DEBUGLOG("DataManager", "Consumption for %d month (%d tariff) monitor %d: %d",
-                             prevMonth, t, i, data.months[prevMonth - 1][t][i]);
+                             prevMonth, t, i, data.base.months[prevMonth - 1][t][i]);
                 }
                 yield();
             }
