@@ -37,21 +37,21 @@ class RemoteDebuggerClass : public StreamString
     uint32_t m_maxSize;
 
   public:
-    void begin(ESP8266WebServer &server, const uint32_t &maxSize = 0)
+    void begin(AsyncWebServer &server, const uint32_t &maxSize = 0)
     {
         if (maxSize != 0)
             m_maxSize = maxSize;
         else
-            m_maxSize = ESP.getFreeHeap() / 3;
+            m_maxSize = ESP.getMaxAllocHeap() / 4;
 
-        server.on("/debug", [&]() {
+        server.on("/debug", [&](AsyncWebServerRequest *request) {
             String result = F("<META http-equiv=\"refresh\" content=\"5;URL=/debug\">\n");
             result += F("<link rel=\"icon\" href=\"data:;base64,iVBORw0KGgo=\">\n");
             result += F("<p style='white-space: pre;font-family: monospace;'>");
             result += String(length()) + F("/") + String(m_maxSize) + "\n";
             result += c_str();
             result += F("</p>");
-            server.send(200, "text/html", result);
+            request->send(200, "text/html", result);
         });
     }
 

@@ -1,7 +1,6 @@
 #ifndef WEB_HANDLER_H
 #define WEB_HANDLER_H
 
-#include <WebServer.h>
 #include <FS.h>
 #include <StreamString.h>
 // TODO: missing in ESP32
@@ -9,97 +8,95 @@
 #include<SPIFFS.h>
 #include<Update.h>
 
+#include "src/ESPAsyncWebServer/ESPAsyncWebServer.h"
 #include "src/NTPClient.h"
 
 class WebHandler
 {
 private:
-    WebServer &server;
+    AsyncWebServer &server;
+    const uint8_t ledPin;
     bool updated = false;
 
 public:
-    WebHandler(WebServer &server) : server(server)
+    WebHandler(AsyncWebServer &server, const uint8_t &ledPin) : server(server), ledPin(ledPin)
     {
     }
 
     void setup()
     {
-        server.on("/login", HTTP_GET, [&]() { handleLogin(HTTP_GET); });
-        server.on("/login", HTTP_POST, [&]() { handleLogin(HTTP_POST); });
-        server.on("/data.js", HTTP_GET, [&]() { handleDataFile(); });
-        server.on("/settings", HTTP_POST, [&]() { handleSettings(); }, [&]() { handleUpdate(); });
-        server.on("/raw", HTTP_GET, [&]() { handleRaw(); });
-        server.on("/data", HTTP_GET, [&]() { handleRawData(); });
-        server.on("/restart", HTTP_GET, [&]() { handleRestart(); });
+        server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html").setCacheControl("max-age=86400");
 
-        server.onNotFound([&]() {
-            if (!handleFileRead(server.uri()))
-            {
-                server.send(404, "text/plain", F("404: Not Found"));
-            }
-        });
+        server.on("/login", HTTP_GET, [&](AsyncWebServerRequest *request) { handleLogin(request); });
+        server.on("/login", HTTP_POST, [&](AsyncWebServerRequest *request) { handleLogin(request); });
+        server.on("/data.js", HTTP_GET, [&](AsyncWebServerRequest *request) { handleDataFile(request); });
+        server.on("/settings", HTTP_POST, [&](AsyncWebServerRequest *request) { handleSettings(request); },
+            [&](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) { handleUpdate(request, filename, index, data, len, final); });
+        server.on("/raw", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRaw(request); });
+        server.on("/data", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRawData(request); });
+        server.on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRestart(request); });
     }
 
 private:
-    void handleLogin(const HTTPMethod &method) const
+    void handleLogin(AsyncWebServerRequest *request) const
     {
-        digitalWrite(LED_BUILTIN, LOW);
-        if (method == HTTP_GET)
+        digitalWrite(ledPin, LOW);
+        if (request->method() == HTTP_GET)
         {
             if (authenticate(false))
-                server.send(200, "text/html", "");
+                request->send(200, "text/html", "");
             else
-                server.send(401, "text/html", "");
+                request->send(401, "text/html", "");
         }
-        else if (method == HTTP_POST)
+        else if (request->method() == HTTP_POST)
         {
-            if (server.arg("password") == DataManager.data.settings.password)
+            AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "");
+            if (request->arg("password") == DataManager.data.settings.password)
             {
                 DEBUGLOG("WebHandler", "Login");
+                response->addHeader("Location", request->arg("redirect"));
                 // set cookie with hash of remoteIp and password with max age 20 min
                 String hash = ""; // TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
-                server.sendHeader("Set-Cookie", hash + ";Max-Age=1200;path=./");
-
-                server.sendHeader("Location", server.arg("redirect"), true);
-                server.send(302, "text/plain", "");
+                response->addHeader("Set-Cookie", hash + ";Max-Age=1200;path=./");
             }
             else
             {
                 DEBUGLOG("WebHandler", "Wrong password");
-                server.sendHeader("Set-Cookie", "login fail;Max-Age=3;path=./");
-                server.sendHeader("Location", "./", true);
-                server.send(302, "text/plain", "");
+                response->addHeader("Location", "./");
+                response->addHeader("Set-Cookie", "login fail;Max-Age=3;path=./");
             }
+            request->send(response);
         }
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(ledPin, HIGH);
     }
 
-    bool authenticate(const bool &redirect = true) const
+    bool authenticate(AsyncWebServerRequest *request, const bool &redirect = true) const
     {
         if (strcmp(DataManager.data.settings.password, "") == 0) // empty password
             return true;
 
         bool res = false;
-        if (server.hasHeader("Cookie"))
+        if (request->hasHeader("Cookie"))
         {
             String hash = "";// TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
-            res = (server.header("Cookie") == hash);
+            res = (request->header("Cookie") == hash);
         }
 
         if (!res && redirect)
         {
-            server.sendHeader("Location", "./", true);
-            server.send(302, "text/plain", "");
+            AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "");
+            response->addHeader("Location", "./");
+            request->send(response);
         }
         return res;
     }
 
-    void handleDataFile() const
+    void handleDataFile(AsyncWebServerRequest *request) const
     {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(ledPin, LOW);
 
         unsigned long timer = millis();
         String result = SF("var data = {};\n");
@@ -236,87 +233,26 @@ private:
         result += SF("// ") + String(millis() - timer) + SF(", ") + String(result.length());
         DEBUGLOG("WebHandler", "Generating data.js (%d bytes) for %d millisec", result.length(), (millis() - timer));
 
-        server.send(200, "application/javascript", result);
-        digitalWrite(LED_BUILTIN, HIGH);
+        request->send(200, "application/javascript", result);
+        digitalWrite(ledPin, HIGH);
     }
 
-    bool handleFileRead(String path) const
+    void handleSettings(AsyncWebServerRequest *request)
     {
-        digitalWrite(LED_BUILTIN, LOW);
-
-        DEBUGLOG("WebHandler", "HandleFileRead: %s", path.c_str());
-        if (path.endsWith("/"))
-            path += "index.html";
-        // if not authenticated and it's html file and it's not index.html
-        if (path.endsWith(".html") && !path.endsWith("index.html") &&
-            !authenticate())
-            return true;
-        String contentType = getContentType(path);
-        String pathWithGz = path + ".gz";
-        if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path))
-        {
-            if (SPIFFS.exists(pathWithGz))
-                path = pathWithGz;
-            File file = SPIFFS.open(path, "r");
-            server.sendHeader("Cache-Control", "max-age=86400");
-            size_t sent = server.streamFile(file, contentType);
-            file.close();
-            DEBUGLOG("WebHandler", "\tSent file: %s", path.c_str());
-
-            digitalWrite(LED_BUILTIN, HIGH);
-            return true;
-        }
-        DEBUGLOG("WebHandler", "\tFile Not Found: %s", path.c_str());
-
-        digitalWrite(LED_BUILTIN, HIGH);
-        return false; // If the file doesn't exist, return false
-    }
-
-    inline String getContentType(const String &filename) const
-    {
-        if (filename.endsWith(".htm"))
-            return "text/html";
-        else if (filename.endsWith(".html"))
-            return "text/html";
-        else if (filename.endsWith(".css"))
-            return "text/css";
-        else if (filename.endsWith(".js"))
-            return "application/javascript";
-        else if (filename.endsWith(".png"))
-            return "image/png";
-        else if (filename.endsWith(".gif"))
-            return "image/gif";
-        else if (filename.endsWith(".jpg"))
-            return "image/jpeg";
-        else if (filename.endsWith(".ico"))
-            return "image/x-icon";
-        else if (filename.endsWith(".xml"))
-            return "text/xml";
-        else if (filename.endsWith(".pdf"))
-            return "application/x-pdf";
-        else if (filename.endsWith(".zip"))
-            return "application/x-zip";
-        else if (filename.endsWith(".gz"))
-            return "application/x-gzip";
-        return "text/plain";
-    }
-
-    void handleSettings()
-    {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(ledPin, LOW);
 
         bool restart = false;
         int listParamIdx = 0;
-        for (int i = 0; i < server.args(); i++)
+        for (int i = 0; i < request->args(); i++)
         {
-            const String &name = server.argName(i);
-            const String &value = server.arg(i);
+            const String &name = request->argName(i);
+            const String &value = request->arg(i);
             DEBUGLOG("WebHandler", "Set setting %s: %s", name.c_str(), value.c_str());
 
-            if (i > 0 && name != server.argName(i - 1))
+            if (i > 0 && name != request->argName(i - 1))
                 listParamIdx = 0;
 
             // basic settings
@@ -419,11 +355,11 @@ private:
                 response = SF("Update Success");
             DEBUGLOG("WebHandler", response.c_str());
 
-            server.client().setNoDelay(true);
+            request->client()->setNoDelay(true);
             response = SF("<META http-equiv=\"refresh\" content=\"15;URL=./\">") + response + SF("! Rebooting...\n");
-            server.send(200, "text/html", response);
+            request->send(200, "text/html", response);
             delay(100);
-            server.client().stop();
+            request->client()->stop();
             ESP.restart();
         }
         else
@@ -431,69 +367,64 @@ private:
             DataManager.data.save(Data::SaveFlags::Settings);
             if (restart)
             {
-                server.client().setNoDelay(true);
-                server.send(200, "text/html", SF("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
+                request->client()->setNoDelay(true);
+                request->send(200, "text/html", SF("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
                 delay(100);
-                server.client().stop();
+                request->client()->stop();
                 ESP.restart();
             }
             else
             {
-                server.sendHeader("Location", server.header("Referer"), true);
-                server.send(302, "text/plain", "");
+                AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "");
+                response->addHeader("Location", request->header("Referer"));
+                request->send(response);
             }
         }
 
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(ledPin, HIGH);
     }
 
-    void handleUpdate()
+    void handleUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
     {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
-        digitalWrite(LED_BUILTIN, LOW);
-        /* TODO:
+        digitalWrite(ledPin, LOW);
         // from ESP8266HTTPUpdateServer
         // handler for the file upload, get's the sketch bytes, and writes
         // them through the Update object
-        HTTPUpload &upload = server.upload();
         int command = U_FLASH;
-        if (upload.name == "update_spiffs")
-            command = U_FS;
+        if (filename.indexOf("spiffs") > -1) // if filename contains 'spiffs'
+            command = U_SPIFFS;
 
-        if (upload.status == UPLOAD_FILE_START)
+        if (index == 0) // upload starts
         {
-            WiFiUDP::stopAll();
-            DEBUGLOG("WebHandler", "Update: %s", upload.filename.c_str());
-            uint32_t maxSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-            if (command == U_FS)
-            {
-                maxSpace = ((size_t)&_FS_end - (size_t)&_FS_start);
-                close_all_fs();
-            }
-            if (!Update.begin(maxSpace, command)) //start with max available size
+            DEBUGLOG("WebHandler", "Update: %s", filename.c_str());
+            if (command == U_SPIFFS)
+                SPIFFS.end();
+
+            if (!Update.begin(UPDATE_SIZE_UNKNOWN, command, ledPin)) //start with max available size
             {
 #ifdef DEBUG
                 Update.printError(Serial);
 #endif
             }
         }
-        else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
+        if (!Update.hasError())
         {
             DEBUGLOG("WebHandler", "Processing");
-            if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
+            if (Update.write(data, len) != len)
             {
 #ifdef DEBUG
                 Update.printError(Serial);
 #endif
             }
         }
-        else if (upload.status == UPLOAD_FILE_END && !Update.hasError())
+        if (final && !Update.hasError())
         {
             if (Update.end(true)) //true to set the size to the current progress
             {
-                DEBUGLOG("WebHandler", "Update Success: %u", upload.totalSize);
+                DEBUGLOG("WebHandler", "Update Success: %u", (index + len));
             }
             else
             {
@@ -501,27 +432,20 @@ private:
                 Update.printError(Serial);
 #endif
             }
-            if (upload.totalSize > 0)
+            if (index + len > 0)
                 updated = true;
         }
-        else if (upload.status == UPLOAD_FILE_ABORTED)
-        {
-            Update.end();
-            DEBUGLOG("WebHandler", "Update was aborted");
-            if (upload.totalSize > 0)
-                updated = true;
-        }*/
         delay(0);
 
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(ledPin, HIGH);
     }
 
-    void handleRaw() const
+    void handleRaw(AsyncWebServerRequest *request) const
     {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(ledPin, LOW);
 
         date_time dt = DataManager.getCurrentTime();
         uint32_t values[TARIFFS_COUNT];
@@ -710,8 +634,8 @@ private:
         result += SF("</table>");
         result += String(result.length());
 
-        server.send(200, "text/html", result);
-        digitalWrite(2, HIGH);
+        request->send(200, "text/html", result);
+        digitalWrite(ledPin, HIGH);
     }
 
     inline String toString(const uint32_t &value) const
@@ -732,12 +656,12 @@ private:
         return str;
     }
 
-    void handleRawData() const
+    void handleRawData(AsyncWebServerRequest *request) const
     {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(ledPin, LOW);
 
         String result = "[\n";
 #ifdef VOLTAGE_MONITOR
@@ -778,20 +702,20 @@ private:
         }
         result += "]";
 
-        server.send(200, "text/plain", result);
-        digitalWrite(LED_BUILTIN, HIGH);
+        request->send(200, "text/plain", result);
+        digitalWrite(ledPin, HIGH);
     }
 
-    void handleRestart() const
+    void handleRestart(AsyncWebServerRequest *request) const
     {
-        if (!authenticate())
+        if (!authenticate(request))
             return;
 
         DEBUGLOG("WebHandler", "Restart");
-        server.client().setNoDelay(true);
-        server.send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
+        request->client()->setNoDelay(true);
+        request->send(200, "text/html", F("<META http-equiv=\"refresh\" content=\"5;URL=./\">Rebooting...\n"));
         delay(100);
-        server.client().stop();
+        request->client()->stop();
         ESP.restart();
     }
 };

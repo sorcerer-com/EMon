@@ -37,6 +37,7 @@ public:
 
     void update()
     {
+        // TODO: revise need of batching
         irms += calcIrms(samplesCount / batchesCount);
         batchIdx++;
         current = (current + irms / batchIdx) / 2;

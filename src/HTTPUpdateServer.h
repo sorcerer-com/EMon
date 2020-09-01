@@ -4,9 +4,10 @@
 #include<SPIFFS.h>
 #include <StreamString.h>
 #include <Update.h>
-#include <WebServer.h>
 
+#include "ESPAsyncWebServer/ESPAsyncWebServer.h"
 
+// https://github.com/lbernstone/asyncUpdate/blob/master/AsyncUpdate.ino
 static const char serverIndex[] PROGMEM =
 R"(<!DOCTYPE html>
      <html lang='en'>
@@ -41,60 +42,56 @@ public:
         _authenticated = false;
     }
 
-    void setup(WebServer *server)
+    void setup(AsyncWebServer *server)
     {
         setup(server, emptyString, emptyString);
     }
 
-    void setup(WebServer *server, const String& path)
+    void setup(AsyncWebServer *server, const String& path)
     {
         setup(server, path, emptyString, emptyString);
     }
 
-    void setup(WebServer *server, const String& username, const String& password)
+    void setup(AsyncWebServer *server, const String& username, const String& password)
     {
         setup(server, "/update", username, password);
     }
 
-    void setup(WebServer *server, const String& path, const String& username, const String& password)
+    void setup(AsyncWebServer *server, const String& path, const String& username, const String& password)
     {
-
         _server = server;
         _username = username;
         _password = password;
 
         // handler for the /update form page
-        _server->on(path.c_str(), HTTP_GET, [&]() {
-            if (_username != emptyString && _password != emptyString && !_server->authenticate(_username.c_str(), _password.c_str()))
-                return _server->requestAuthentication();
-            _server->send_P(200, PSTR("text/html"), serverIndex);
+        _server->on(path.c_str(), HTTP_GET, [&](AsyncWebServerRequest *request) {
+            if (_username != emptyString && _password != emptyString && !request->authenticate(_username.c_str(), _password.c_str()))
+                return request->requestAuthentication();
+            request->send_P(200, PSTR("text/html"), serverIndex);
             });
 
         // handler for the /update form POST (once file upload finishes)
-        _server->on(path.c_str(), HTTP_POST, [&]() {
+        _server->on(path.c_str(), HTTP_POST, [&](AsyncWebServerRequest *request) {
             if (!_authenticated)
-                return _server->requestAuthentication();
+                return request->requestAuthentication();
             if (Update.hasError()) {
-                _server->send(200, F("text/html"), String(F("Update error: ")) + _updaterError);
+                request->send(200, F("text/html"), String(F("Update error: ")) + _updaterError);
             }
             else {
-                _server->client().setNoDelay(true);
-                _server->send_P(200, PSTR("text/html"), successResponse);
+                request->client()->setNoDelay(true);
+                request->send_P(200, PSTR("text/html"), successResponse);
                 delay(100);
-                _server->client().stop();
+                request->client()->stop();
                 ESP.restart();
             }
-            }, [&]() {
-                // handler for the file upload, get's the sketch bytes, and writes
-                // them through the Update object
-                HTTPUpload& upload = _server->upload();
+            }, [&](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
 
-                if (upload.status == UPLOAD_FILE_START) {
+                if (index == 0) { // upload starts
                     _updaterError.clear();
                     if (_serial_output)
                         Serial.setDebugOutput(true);
 
-                    _authenticated = (_username == emptyString || _password == emptyString || _server->authenticate(_username.c_str(), _password.c_str()));
+                    _authenticated = (_username == emptyString || _password == emptyString || request->authenticate(_username.c_str(), _password.c_str()));
                     if (!_authenticated) {
                         if (_serial_output)
                             Serial.printf("Unauthenticated Update\n");
@@ -102,37 +99,33 @@ public:
                     }
 
                     if (_serial_output)
-                        Serial.printf("Update: %s\n", upload.filename.c_str());
-                    if (upload.name == "filesystem") {
-                        if (!Update.begin(SPIFFS.totalBytes(), U_SPIFFS)) {//start with max available size
+                        Serial.printf("Update: %s\n", filename.c_str());
+                    if (filename.indexOf("spiffs") > -1) { // if filename contains 'spiffs'
+                        SPIFFS.end();
+                        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_SPIFFS)) {//start with max available size
                             if (_serial_output) Update.printError(Serial);
                         }
                     }
                     else {
-                        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-                        if (!Update.begin(maxSketchSpace, U_FLASH)) {//start with max available size
+                        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {//start with max available size
                             _setUpdaterError();
                         }
                     }
                 }
-                else if (_authenticated && upload.status == UPLOAD_FILE_WRITE && !_updaterError.length()) {
+                if (_authenticated && !_updaterError.length()) {
                     if (_serial_output) Serial.printf(".");
-                    if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+                    if (Update.write(data, len) != len) {
                         _setUpdaterError();
                     }
                 }
-                else if (_authenticated && upload.status == UPLOAD_FILE_END && !_updaterError.length()) {
+                if (_authenticated && final && !_updaterError.length()) {
                     if (Update.end(true)) { //true to set the size to the current progress
-                        if (_serial_output) Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+                        if (_serial_output) Serial.printf("Update Success: %u\nRebooting...\n", (index + len));
                     }
                     else {
                         _setUpdaterError();
                     }
                     if (_serial_output) Serial.setDebugOutput(false);
-                }
-                else if (_authenticated && upload.status == UPLOAD_FILE_ABORTED) {
-                    Update.end();
-                    if (_serial_output) Serial.println("Update was aborted");
                 }
                 delay(0);
             });
@@ -155,7 +148,7 @@ protected:
 
 private:
     bool _serial_output;
-    WebServer *_server;
+    AsyncWebServer *_server;
     String _username;
     String _password;
     bool _authenticated;
