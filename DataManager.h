@@ -6,9 +6,7 @@
 #include "Data.h"
 #include "src/NTPClient.h"
 #include "src/ADS1015.h"
-#ifdef VOLTAGE_MONITOR
 #include "src/VoltageMonitor.h"
-#endif
 #include "src/EnergyMonitor.h"
 
 #define VERSION "1.1.0"
@@ -61,9 +59,7 @@ public:
     {
         for (int m = 0; m < MONITORS_COUNT; m++)
             getMonitor(m).update();
-#ifdef VOLTAGE_MONITOR
         VoltageMonitor.update();
-#endif
 
         uint32_t elapsed = millis() - timer;
         if (elapsed > MILLIS_IN_A_MINUTE)
@@ -131,7 +127,7 @@ public:
 
     inline double getVoltage()
     {
-        return getMonitor(0).voltage(); // it's static
+        return VoltageMonitor.voltage;
     }
 
     inline double getCurrent(const int &monitorIdx)
@@ -142,7 +138,7 @@ public:
     inline double getEnergy(const int &monitorIdx)
     {
         EnergyMonitor &monitor = getMonitor(monitorIdx);
-        return monitor.current * monitor.voltage() * data.settings.coefficient;
+        return monitor.current * VoltageMonitor.voltage * data.settings.coefficient;
     }
 
     inline uint32_t getCurrentHourEnergy(const int &monitorIdx)

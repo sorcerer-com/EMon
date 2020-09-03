@@ -172,9 +172,7 @@ private:
         }
         result += SF("\n");
 
-#ifdef VOLTAGE_MONITOR
         result += SF("data.current.voltage = ") + DataManager.getVoltage() + SF(";\n\n");
-#endif
 
         result += SF("data.hours = [];\n");
         for (int m = 0; m < MONITORS_COUNT; m++)
@@ -665,7 +663,7 @@ private:
         digitalWrite(ledPin, LOW);
 
         String result = "[\n";
-#ifdef VOLTAGE_MONITOR
+
         // voltage
         result += "\t{\n";
         result += "\t\t \"name\": \"Voltage\",\n";
@@ -673,7 +671,7 @@ private:
         result += "\t\t \"aggrType\": \"avg\",\n";
         result += "\t\t \"desc\": \"Voltage value\"\n";
         result += "\t},\n";
-#endif
+
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
             uint32_t values[TARIFFS_COUNT];

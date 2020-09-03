@@ -8,7 +8,6 @@
 #include <ESPmDNS.h>
 
 #define DEBUG
-//#define VOLTAGE_MONITOR // TODO: remove it since all devices will have voltage monitor
 
 #include "src/ESPAsyncWebServer/ESPAsyncWebServer.h"
 #include "src/ESPAsyncWebServer/SPIFFSEditor.h"

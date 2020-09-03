@@ -19,14 +19,6 @@ private:
     uint64_t power = 0;
 
 public:
-    const double voltage() const
-    {
-#ifndef VOLTAGE_MONITOR
-        return 220;
-#else
-        return VoltageMonitor.voltage;
-#endif
-    }
     double current = 0.0;
 
     EnergyMonitor(ADS1115 &_ads, uint8_t _channel) : ads(_ads)
@@ -47,7 +39,7 @@ public:
         current = irms;
         if (irms < 0.2) // noise
             irms = 0.0;
-        power += round(irms * voltage());
+        power += round(irms * VoltageMonitor.voltage);
         counter++;
         //DEBUGLOG("EnergyMonitor", "Channel: %d, Irms: %f, power: %d in %d counts",
         //         channel, irms, power, counter);
