@@ -3,10 +3,9 @@
 
 #include <FS.h>
 #include <StreamString.h>
-// TODO: missing in ESP32
-//#include <Hash.h>
-#include<SPIFFS.h>
-#include<Update.h>
+#include <mbedtls/sha1.h>
+#include <SPIFFS.h>
+#include <Update.h>
 
 #include "src/ESPAsyncWebServer/ESPAsyncWebServer.h"
 #include "src/NTPClient.h"
@@ -43,7 +42,7 @@ private:
         digitalWrite(ledPin, LOW);
         if (request->method() == HTTP_GET)
         {
-            if (authenticate(false))
+            if (authenticate(request, false))
                 request->send(200, "text/html", "");
             else
                 request->send(401, "text/html", "");
@@ -56,7 +55,7 @@ private:
                 DEBUGLOG("WebHandler", "Login");
                 response->addHeader("Location", request->arg("redirect"));
                 // set cookie with hash of remoteIp and password with max age 20 min
-                String hash = ""; // TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+                String hash = sha1(request->client()->remoteIP().toString() + DataManager.data.settings.password);
                 response->addHeader("Set-Cookie", hash + ";Max-Age=1200;path=./");
             }
             else
@@ -78,7 +77,7 @@ private:
         bool res = false;
         if (request->hasHeader("Cookie"))
         {
-            String hash = "";// TODO: sha1(server.client().remoteIP().toString() + DataManager.data.settings.password);
+            String hash = sha1(request->client()->remoteIP().toString() + DataManager.data.settings.password);
             res = (request->header("Cookie") == hash);
         }
 
@@ -491,7 +490,7 @@ private:
         result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF(", ");
         result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF(", ");
         result += SF("WiFi DNS: ") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF(", ");
-        result += SF("Data size: ") + String(sizeof(DataManager.data);
+        result += SF("Data size: ") + String(sizeof(DataManager.data));
         result += SF("<br/>\n");
 
         result += SF("SPIFFS: ") + String(SPIFFS.usedBytes()) + SF("/") + String(SPIFFS.totalBytes()) + SF(", ");
@@ -719,6 +718,27 @@ private:
         delay(100);
         request->client()->stop();
         ESP.restart();
+    }
+
+    static String sha1(const String& payload)
+    {
+        mbedtls_sha1_context ctx;
+        uint8_t hash[20];
+
+        mbedtls_sha1_init(&ctx);
+        mbedtls_sha1_starts(&ctx);
+        mbedtls_sha1_update(&ctx,  (const unsigned char *)payload.c_str(), payload.length());
+        mbedtls_sha1_finish(&ctx, hash);
+        mbedtls_sha1_free(&ctx);
+
+        String hashStr((const char*)nullptr);
+        hashStr.reserve(20 * 2 + 1);
+        for(uint16_t i = 0; i < 20; i++) {
+            char hex[3];
+            snprintf(hex, sizeof(hex), "%02x", hash[i]);
+            hashStr += hex;
+        }
+        return hashStr;
     }
 };
 
