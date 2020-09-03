@@ -456,6 +456,7 @@ private:
         if (month < 1)
             month += 12;
 
+        // TODO: review data here:
         String result = SF("Version: ") + SF(VERSION) + SF("<br/>\n");
         result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
         result += SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
@@ -490,10 +491,11 @@ private:
         result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF(", ");
         result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF(", ");
         result += SF("WiFi DNS: ") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF(", ");
-        result += SF("Data size: ") + String(sizeof(DataManager.data) + SF("/4096"));
+        result += SF("Data size: ") + String(sizeof(DataManager.data);
         result += SF("<br/>\n");
 
-        result += SF("SPIFFS: ") + String(SPIFFS.usedBytes()) + SF("/") + String(SPIFFS.totalBytes());
+        result += SF("SPIFFS: ") + String(SPIFFS.usedBytes()) + SF("/") + String(SPIFFS.totalBytes()) + SF(", ");
+        result += SF("LITTLEFS: ") + String(LITTLEFS.usedBytes()) + SF("/") + String(LITTLEFS.totalBytes());
         result += SF("<br/>\n<br/>\n");
         result += SF("\n");
 

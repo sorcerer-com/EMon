@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <SPIFFS.h>
+#include "src/LittleFS/LITTLEFS.h"
 
 #define SF(str) String(F(str))
 
@@ -68,23 +68,21 @@ public:
 
     void load()
     {
-        // TODO: check file location (10000 cycles) - use LittleFs?, external EEPROM
-        // TODO: when write new UI (SPIFFS) the data will be lost - use second partition?
         DEBUGLOG("Data", "Read data with size: %d", sizeof(*this));
         reset(); // set default values first
 
-        if (SPIFFS.exists("/data/base.dat"))
-            readFile("/data/base.dat", (uint8_t *)&base, sizeof(base));
+        if (LITTLEFS.exists("/base.dat"))
+            readFile("/base.dat", (uint8_t *)&base, sizeof(base));
         else
             DEBUGLOG("Data", "Data file doesn't exist");
 
-        if (SPIFFS.exists("/data/minutes.dat"))
-            readFile("/data/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
+        if (LITTLEFS.exists("/minutes.dat"))
+            readFile("/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
         else
             DEBUGLOG("Data", "Minutes file doesn't exist");
 
-        if (SPIFFS.exists("/data/settings.dat"))
-            readFile("/data/settings.dat", (uint8_t *)&settings, sizeof(settings));
+        if (LITTLEFS.exists("/settings.dat"))
+            readFile("/settings.dat", (uint8_t *)&settings, sizeof(settings));
         else
             DEBUGLOG("Data", "Settings file doesn't exist");
     }
@@ -94,13 +92,13 @@ public:
         if (saveFlags & SaveFlags::Base)
         {
             DEBUGLOG("Data", "Write base data with size: %d", sizeof(base));
-            writeFile("/data/base.dat", (uint8_t *)&base, sizeof(base));
+            writeFile("/base.dat", (uint8_t *)&base, sizeof(base));
         }
 
         if (saveFlags & SaveFlags::Minutes)
         {
             DEBUGLOG("Data", "Write minutes data with size: %d", sizeof(minutes));
-            writeFile("/data/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
+            writeFile("/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
         }
         if (saveFlags & SaveFlags::ResetMinutes)
         {
@@ -111,7 +109,7 @@ public:
         if (saveFlags & SaveFlags::Settings)
         {
             DEBUGLOG("Data", "Write settings with size: %d", sizeof(settings));
-            writeFile("/data/settings.dat", (uint8_t *)&settings, sizeof(settings));
+            writeFile("/settings.dat", (uint8_t *)&settings, sizeof(settings));
         }
     }
 
@@ -155,7 +153,7 @@ private:
     {
         DEBUGLOG("Data", "Reading file: %s", path);
 
-        File file = SPIFFS.open(path, FILE_READ);
+        File file = LITTLEFS.open(path, FILE_READ);
         if (!file)
         {
             DEBUGLOG("Data", "Failed to open file for reading");
@@ -177,7 +175,7 @@ private:
     {
         DEBUGLOG("Data", "Writing file: %s", path);
 
-        File file = SPIFFS.open(path, FILE_WRITE);
+        File file = LITTLEFS.open(path, FILE_WRITE);
         if (!file)
         {
             DEBUGLOG("Data", "Failed to open file for writing");

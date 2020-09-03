@@ -42,9 +42,10 @@ void setup()
   pinMode(buttonPin, INPUT_PULLUP);
   digitalWrite(ledPin, HIGH);
   
-  if (SPIFFS.begin()) // TODO: if SPIFFS not ok, everything is broken not only data - message (in UI?)
+  SPIFFS.begin(); // TODO: if SPIFFS not ok, everything is broken - no UI - return message?
+  if (LITTLEFS.begin())
       DataManager.data.load();
-  else
+  else // TODO: data is broken - message (in UI?)
       DataManager.data.reset();
 
   // setup WiFi
@@ -86,7 +87,7 @@ void setup()
   }
 
   server.begin();
-  server.addHandler(new SPIFFSEditor(SPIFFS, "admin", "admin")); // TODO: add LittleFS?
+  //server.addHandler(new SPIFFSEditor(LITTLEFS, "admin", "admin"));
 
   httpUpdater.setup(&server, "admin", "admin");
 
