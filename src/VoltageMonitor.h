@@ -13,6 +13,7 @@ public:
 
     void update()
     {
+        // TODO: revise need of batching
         // to align with EnergyMonitor
         batchIdx++;
         if (batchIdx < batchesCount)

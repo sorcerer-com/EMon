@@ -21,7 +21,7 @@
         RemoteDebugger.clean();                    \
     }
 #else
-#define DEBUGLOG(category, ...)
+#define DEBUGLOG(category, ...) { }
 #endif
 
 void printMillis(Print &print, unsigned long value)

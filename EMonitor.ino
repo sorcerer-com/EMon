@@ -50,7 +50,7 @@ void setup()
   // setup WiFi
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
-  WiFi.setHostname("EnergyMonitor"); // TODO: test
+  WiFi.setHostname("EnergyMonitor");
   if (WiFi.config(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
                   DataManager.data.settings.wifi_subnet, DataManager.data.settings.wifi_dns))
   {
@@ -67,17 +67,22 @@ void setup()
 
   wifiMulti.addAP(DataManager.data.settings.wifi_ssid, DataManager.data.settings.wifi_passphrase);
 
-  // Wait for connection
-  DEBUGLOG("EMonitor", "Connecting...");
-  for (int i = 0; i < 10; i++)
+  if (strlen(DataManager.data.settings.wifi_ssid) > 0)
   {
-    if (wifiMulti.run() == WL_CONNECTED)
+    // Wait for connection
+    DEBUGLOG("EMonitor", "Connecting...");
+    for (int i = 0; i < 10; i++)
     {
-      DEBUGLOG("EMonitor", "WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-      break;
+      if (wifiMulti.run() == WL_CONNECTED)
+      {
+        DEBUGLOG("EMonitor", "WiFi: %s, IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        break;
+      }
+      delay(500);
     }
-    delay(500);
   }
+  else
+    DEBUGLOG("EMonitor", "No WiFi SSID set");
 
   if (MDNS.begin("emon"))
   {
@@ -143,11 +148,12 @@ void loop0(void * pvParameters) {
         if (WiFi.getMode() == WIFI_STA)
         {
           // 192.168.244.1
-          // TODO: set default AP IP address
           DEBUGLOG("EMonitor", "Create AP");
           WiFi.mode(WIFI_AP_STA);
-          if (!WiFi.softAPConfig(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
-                                DataManager.data.settings.wifi_subnet))
+          uint32_t wifi_ip = DataManager.data.settings.wifi_ip != 0 ? DataManager.data.settings.wifi_ip : 0x1F4A8C0; // 192.168.244.1
+          uint32_t wifi_gateway = DataManager.data.settings.wifi_gateway != 0 ? DataManager.data.settings.wifi_gateway : 0x1F4A8C0; // 192.168.244.1
+          uint32_t wifi_subnet = DataManager.data.settings.wifi_subnet != 0 ? DataManager.data.settings.wifi_ip : 0xFFFFFF;
+          if (!WiFi.softAPConfig(wifi_ip, wifi_gateway, wifi_subnet))
           {
             DEBUGLOG("EMonitor", "Config WiFi AP - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
                     IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
@@ -156,9 +162,7 @@ void loop0(void * pvParameters) {
                     IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
           }
           else
-          {
             DEBUGLOG("EMonitor", "Cannot config Wifi AP");
-          }
 
           String ssid = SF("EnergyMonitor_") + String((unsigned long)ESP.getEfuseMac(), 16);
           WiFi.softAP(ssid.c_str(), "12345678");
