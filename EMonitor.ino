@@ -124,8 +124,10 @@ void loop()
         // 192.168.244.1
         DEBUGLOG("EMonitor", "Create AP");
         WiFi.mode(WIFI_AP_STA);
-        if (!WiFi.softAPConfig(DataManager.data.settings.wifi_ip, DataManager.data.settings.wifi_gateway,
-                               DataManager.data.settings.wifi_subnet))
+        uint32_t wifi_ip = DataManager.data.settings.wifi_ip != 0 ? DataManager.data.settings.wifi_ip : 0x1F4A8C0; // 192.168.244.1
+        uint32_t wifi_gateway = DataManager.data.settings.wifi_gateway != 0 ? DataManager.data.settings.wifi_gateway : 0x1F4A8C0; // 192.168.244.1
+        uint32_t wifi_subnet = DataManager.data.settings.wifi_subnet != 0 ? DataManager.data.settings.wifi_ip : 0xFFFFFF;
+        if (!WiFi.softAPConfig(wifi_ip, wifi_gateway, wifi_subnet))
         {
           DEBUGLOG("EMonitor", "Config WiFi AP - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
                    IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
