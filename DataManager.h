@@ -1,8 +1,6 @@
 #ifndef DATA_MANAGER_H
 #define DATA_MANAGER_H
 
-#include <EEPROM.h>
-
 #include "Data.h"
 #include "src/NTPClient.h"
 #include "src/VoltageMonitor.h"
@@ -66,7 +64,7 @@ public:
                     startTime = 0;
                 else
                 {
-                    // if there is no internet add max millis value to startTime and write to EEPROM
+                    // if there is no internet add max millis value to startTime and write to storage
                     startTime += ((uint32_t)-1) / MILLIS_IN_A_SECOND;
                     data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
                     data.save(Data::SaveFlags::Base);
@@ -313,7 +311,7 @@ private:
     }
 };
 
-#if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EEPROM)
+#if !defined(NO_GLOBAL_INSTANCES)
 DataManagerClass DataManager;
 #endif
 

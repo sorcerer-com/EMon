@@ -67,7 +67,7 @@ class RemoteDebuggerClass : public StreamString
     }
 };
 
-#if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EEPROM)
+#if !defined(NO_GLOBAL_INSTANCES)
 RemoteDebuggerClass RemoteDebugger;
 #endif
 

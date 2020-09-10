@@ -39,12 +39,14 @@ void setup()
   pinMode(ledPin, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
   digitalWrite(ledPin, HIGH);
-  
-  SPIFFS.begin(); // TODO: if SPIFFS not ok, everything is broken - no UI - return message?
-  if (LITTLEFS.begin())
-      DataManager.data.load();
-  else // TODO: data is broken - message (in UI?)
-      DataManager.data.reset();
+
+  if (!SPIFFS.begin())
+    DEBUGLOG("EMonitor", "Cannot mount SPIFFS")
+
+  if (!LITTLEFS.begin())
+    DEBUGLOG("EMonitor", "Cannot mount LITTLEFS")
+
+  DataManager.data.load();
 
   // setup WiFi
   WiFi.persistent(false);
@@ -98,13 +100,13 @@ void setup()
   webHandler.setup();
 
   xTaskCreatePinnedToCore(
-    loop0,       /* Task function. */
-    "loop0Task", /* name of task. */
-    8192,        /* Stack size of task */
-    NULL,        /* parameter of the task */
-    1,           /* priority of the task */
-    &Task1,      /* Task handle to keep track of created task */
-    0);          /* pin task to core 0 */
+      loop0,       /* Task function. */
+      "loop0Task", /* name of task. */
+      8192,        /* Stack size of task */
+      NULL,        /* parameter of the task */
+      1,           /* priority of the task */
+      &Task1,      /* Task handle to keep track of created task */
+      0);          /* pin task to core 0 */
 }
 
 void loop()
@@ -113,9 +115,11 @@ void loop()
   DataManager.update();
 }
 
-void loop0(void * pvParameters) {
+void loop0(void *pvParameters)
+{
   // Core 0 (PRO_CORE)
-  for (;;) {
+  for (;;)
+  {
 
     // Reset button
     int buttonState = digitalRead(buttonPin);
@@ -149,16 +153,16 @@ void loop0(void * pvParameters) {
           // 192.168.244.1
           DEBUGLOG("EMonitor", "Create AP");
           WiFi.mode(WIFI_AP_STA);
-          uint32_t wifi_ip = DataManager.data.settings.wifi_ip != 0 ? DataManager.data.settings.wifi_ip : 0x1F4A8C0; // 192.168.244.1
+          uint32_t wifi_ip = DataManager.data.settings.wifi_ip != 0 ? DataManager.data.settings.wifi_ip : 0x1F4A8C0;                // 192.168.244.1
           uint32_t wifi_gateway = DataManager.data.settings.wifi_gateway != 0 ? DataManager.data.settings.wifi_gateway : 0x1F4A8C0; // 192.168.244.1
           uint32_t wifi_subnet = DataManager.data.settings.wifi_subnet != 0 ? DataManager.data.settings.wifi_ip : 0xFFFFFF;
           if (!WiFi.softAPConfig(wifi_ip, wifi_gateway, wifi_subnet))
           {
             DEBUGLOG("EMonitor", "Config WiFi AP - IP: %s, Gateway: %s, Subnet: %s, DNS: %s",
-                    IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
-                    IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
-                    IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
-                    IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
+                     IPAddress(DataManager.data.settings.wifi_ip).toString().c_str(),
+                     IPAddress(DataManager.data.settings.wifi_gateway).toString().c_str(),
+                     IPAddress(DataManager.data.settings.wifi_subnet).toString().c_str(),
+                     IPAddress(DataManager.data.settings.wifi_dns).toString().c_str());
           }
           else
             DEBUGLOG("EMonitor", "Cannot config Wifi AP");
@@ -181,10 +185,10 @@ void loop0(void * pvParameters) {
       if (Serial.readString() == "set wifi")
       {
         Serial.println("Waiting for wifi ssid...");
-        while(!Serial.available()) { delay(1000); }
+        while (!Serial.available()) { delay(1000); }
         strcpy(DataManager.data.settings.wifi_ssid, Serial.readString().c_str());
         Serial.println("Waiting for wifi passphrase...");
-        while(!Serial.available()) { delay(1000); }
+        while (!Serial.available()) { delay(1000); }
         strcpy(DataManager.data.settings.wifi_passphrase, Serial.readString().c_str());
         DataManager.data.save(Data::SaveFlags::Settings);
         ESP.restart();

@@ -34,6 +34,8 @@ public:
         server.on("/raw", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRaw(request); });
         server.on("/data", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRawData(request); });
         server.on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRestart(request); });
+
+        server.onNotFound([&](AsyncWebServerRequest *request) { request->send(404, "text/plain", F("404: Not Found")); });
     }
 
 private:
