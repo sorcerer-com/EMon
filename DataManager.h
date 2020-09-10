@@ -9,7 +9,7 @@
 #include "src/VoltageMonitor.h"
 #include "src/EnergyMonitor.h"
 
-#define VERSION "1.1.0"
+#define VERSION "2.0.0"
 
 class DataManagerClass
 {

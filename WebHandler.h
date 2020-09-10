@@ -453,7 +453,6 @@ private:
         if (month < 1)
             month += 12;
 
-        // TODO: review data here:
         String result = SF("Version: ") + SF(VERSION) + SF("<br/>\n");
         result += SF("WiFi Mode: ") + (WiFi.getMode() == 0 ? SF("WIFI_OFF") : (WiFi.getMode() == 1 ? SF("WIFI_STA") : (WiFi.getMode() == 2 ? SF("WIFI_AP") : SF("WIFI_AP_STA")))) + SF("; ");
         result += SF("WiFi: ") + WiFi.SSID() + SF(", ") + WiFi.localIP().toString() + SF(", ") + String(WiFi.RSSI()) + SF("; ");
@@ -479,8 +478,8 @@ private:
         result += SF("CurrSymbols: '") + String(DataManager.data.settings.currencySymbols) + SF("', ");
         result += SF("Monitors: ");
         for (int m = 0; m < MONITORS_COUNT; m++)
-            result += String(DataManager.data.settings.monitorsNames[m]) + SF("; ");
-        result += SF("Password: ") + String(DataManager.data.settings.password) + SF(", ");
+            result += SF("'") + String(DataManager.data.settings.monitorsNames[m]) + SF("'; ");
+        result += SF("Password: '") + String(DataManager.data.settings.password) + SF("', ");
         result += SF("Coefficient: ") + String(DataManager.data.settings.coefficient) + SF(", ");
         result += SF("WiFi SSID: '") + String(DataManager.data.settings.wifi_ssid) + SF("', ");
         result += SF("WiFi Passphrase: '") + String(DataManager.data.settings.wifi_passphrase) + SF("', ");
@@ -488,7 +487,7 @@ private:
         result += SF("WiFi Gateway: ") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF(", ");
         result += SF("WiFi Subnet: ") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF(", ");
         result += SF("WiFi DNS: ") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF(", ");
-        result += SF("Data size: ") + String(sizeof(DataManager.data));
+        result += SF("Data size: ") + String(sizeof(DataManager.data)) + SF(" (") + String(sizeof(DataManager.data.base)) + SF("/") + String(sizeof(DataManager.data.minutes)) + SF("/") + String(sizeof(DataManager.data.settings)) + SF(")");
         result += SF("<br/>\n");
 
         result += SF("SPIFFS: ") + String(SPIFFS.usedBytes()) + SF("/") + String(SPIFFS.totalBytes()) + SF(", ");
@@ -718,20 +717,21 @@ private:
         ESP.restart();
     }
 
-    static String sha1(const String& payload)
+    static String sha1(const String &payload)
     {
         mbedtls_sha1_context ctx;
         uint8_t hash[20];
 
         mbedtls_sha1_init(&ctx);
         mbedtls_sha1_starts(&ctx);
-        mbedtls_sha1_update(&ctx,  (const unsigned char *)payload.c_str(), payload.length());
+        mbedtls_sha1_update(&ctx, (const unsigned char *)payload.c_str(), payload.length());
         mbedtls_sha1_finish(&ctx, hash);
         mbedtls_sha1_free(&ctx);
 
-        String hashStr((const char*)nullptr);
+        String hashStr((const char *)nullptr);
         hashStr.reserve(20 * 2 + 1);
-        for(uint16_t i = 0; i < 20; i++) {
+        for (uint16_t i = 0; i < 20; i++)
+        {
             char hex[3];
             snprintf(hex, sizeof(hex), "%02x", hash[i]);
             hashStr += hex;
