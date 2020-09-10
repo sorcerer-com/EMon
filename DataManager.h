@@ -5,7 +5,6 @@
 
 #include "Data.h"
 #include "src/NTPClient.h"
-#include "src/ADS1015.h"
 #include "src/VoltageMonitor.h"
 #include "src/EnergyMonitor.h"
 
@@ -18,7 +17,6 @@ private:
     uint32_t timer;
     bool internet; // if the device is connected to the Internet
 
-    ADS1115 ads;
     EnergyMonitor monitor1;
     EnergyMonitor monitor2;
     EnergyMonitor monitor3;
@@ -27,7 +25,7 @@ private:
 public:
     Data data;
 
-    DataManagerClass() : monitor1(ads, 0), monitor2(ads, 1), monitor3(ads, 2), monitor4(ads, 3)
+    DataManagerClass() : monitor1(34), monitor2(35), monitor3(32), monitor4(33)
     {
         startTime = 0;
         timer = 0;
@@ -50,9 +48,6 @@ public:
         DEBUGLOG("DataManager", "Start time: %s (%d)", dateTimeToString(dt).c_str(),
                  startTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
         timer = millis();
-
-        ads.setGain(GAIN_ONE); // 1x gain   +/- 4.096V  1 bit = 2mV      0.125mV
-        ads.begin();
     }
 
     void update()

@@ -4,6 +4,8 @@
 class VoltageMonitorClass
 {
 private:
+    const uint8_t inputPin = 27;
+
     const uint16_t samplesCount = 1480;
     const uint8_t batchesCount = 148;
     uint8_t batchIdx = 0;
@@ -38,7 +40,7 @@ private:
         float multiplier = 0.125F; /* ADS1115 @ +/- 4.096V gain (16-bit results) */
         for (uint16_t i = 0; i < samplesCount; i++)
         {
-            sampleV = analogRead(A0);
+            sampleV = analogRead(inputPin);
 
             // Digital low pass filter extracts the 2.5 V or 1.65 V dc offset,
             // then subtract this - signal is now centered on 0 counts.

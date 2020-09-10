@@ -1,13 +1,11 @@
 #ifndef ENERGY_MONITOR_H
 #define ENERGY_MONITOR_H
 
-#include "ADS1015.h"
 
 class EnergyMonitor
 {
 private:
-    ADS1115 &ads;
-    uint8_t channel = 0;
+    uint8_t inputPin;
 
     const uint16_t samplesCount = 1480;
     const uint8_t batchesCount = 148;
@@ -21,10 +19,8 @@ private:
 public:
     double current = 0.0;
 
-    EnergyMonitor(ADS1115 &_ads, uint8_t _channel) : ads(_ads)
+    EnergyMonitor(const uint8_t& _inputPin) : inputPin(_inputPin)
     {
-        channel = _channel;
-        timer = millis();
     }
 
     void update()
@@ -41,8 +37,8 @@ public:
             irms = 0.0;
         power += round(irms * VoltageMonitor.voltage);
         counter++;
-        //DEBUGLOG("EnergyMonitor", "Channel: %d, Irms: %f, power: %d in %d counts",
-        //         channel, irms, power, counter);
+        //DEBUGLOG("EnergyMonitor", "InputPin: %d, Irms: %f, power: %d in %d counts",
+        //         inputPin, irms, power, counter);
         irms = 0;
         batchIdx = 0;
     }
@@ -60,8 +56,8 @@ public:
 
         if (clear)
         {
-            DEBUGLOG("EnergyMonitor", "Channel: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
-                     channel, (uint32_t)power, delta, counter, (uint32_t)energy);
+            DEBUGLOG("EnergyMonitor", "InputPin: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
+                     inputPin, (uint32_t)power, delta, counter, (uint32_t)energy);
 
             timer = millis();
             counter = 0;
@@ -72,6 +68,7 @@ public:
 
 private:
     int16_t sampleI;
+    // TODO: no ADS
     double offsetI = (double)(2 << 13) * 3.3 / 4.096; // half signed 16bit * (3.3V / 4.096V (ADS))
     double filteredI;
     double sqI, sumI;
@@ -81,10 +78,11 @@ private:
     double calcIrms(uint16_t samplesCount)
     {
         /* Be sure to update this value based on the IC and the gain settings! */
+        // TODO: no ADS
         float multiplier = 0.125F; /* ADS1115 @ +/- 4.096V gain (16-bit results) */
         for (uint16_t i = 0; i < samplesCount; i++)
         {
-            sampleI = ads.readADC_SingleEnded(channel);
+            sampleI = analogRead(inputPin);
 
             // Digital low pass filter extracts the 2.5 V or 1.65 V dc offset,
             // then subtract this - signal is now centered on 0 counts.

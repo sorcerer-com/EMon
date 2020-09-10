@@ -16,9 +16,8 @@
 #include "DataManager.h"
 #include "WebHandler.h"
 
-// TODO: revise all pins / ADS too
 static const uint8_t ledPin = 22;
-static const uint8_t buttonPin = 0; // GPIO0 / D3
+static const uint8_t buttonPin = 17;
 unsigned long buttonTimer = 0;
 
 unsigned long reconnectTimer = millis() - 5 * MILLIS_IN_A_SECOND;
