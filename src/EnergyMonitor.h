@@ -8,8 +8,6 @@ private:
     uint8_t inputPin;
 
     const uint16_t samplesCount = 1480;
-    const uint8_t batchesCount = 148;
-    uint8_t batchIdx = 0;
     double irms = 0.0;
 
     uint16_t counter = 0;
@@ -25,13 +23,7 @@ public:
 
     void update()
     {
-        // TODO: revise need of batching
-        irms += calcIrms(samplesCount / batchesCount);
-        batchIdx++;
-        current = (current + irms / batchIdx) / 2;
-        if (batchIdx < batchesCount)
-            return;
-        irms /= batchesCount;
+        irms += calcIrms(samplesCount);
         current = irms;
         if (irms < 0.2) // noise
             irms = 0.0;
@@ -40,7 +32,6 @@ public:
         //DEBUGLOG("EnergyMonitor", "InputPin: %d, Irms: %f, power: %d in %d counts",
         //         inputPin, irms, power, counter);
         irms = 0;
-        batchIdx = 0;
     }
 
     // returns consumed energy in watts per 0.01 hour

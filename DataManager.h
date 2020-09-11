@@ -45,7 +45,7 @@ public:
         date_time dt = getCurrentTime();
         DEBUGLOG("DataManager", "Start time: %s (%d)", dateTimeToString(dt).c_str(),
                  startTime + data.settings.timeZone * SECONDS_IN_AN_HOUR + (millis() / MILLIS_IN_A_SECOND));
-        timer = millis();
+        timer = millis() - dt.Second * MILLIS_IN_A_SECOND;
     }
 
     void update()
@@ -81,7 +81,6 @@ public:
 
             date_time dt = getCurrentTime();
             DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
-            timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
 
             // if new hour begins
             if (dt.Hour != data.base.lastSavedHour)
@@ -115,6 +114,8 @@ public:
             for (int m = 0; m < MONITORS_COUNT; m++)
                 data.minutes[m][dt.Minute] =  getMonitor(m).getEnergy();
             data.save(Data::SaveFlags::Minutes);
+            
+            timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
         }
     }
 

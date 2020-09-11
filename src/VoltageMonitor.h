@@ -7,23 +7,15 @@ private:
     const uint8_t inputPin = 27;
 
     const uint16_t samplesCount = 1480;
-    const uint8_t batchesCount = 148;
-    uint8_t batchIdx = 0;
 
 public:
     double voltage = 220;
 
     void update()
     {
-        // TODO: revise need of batching
-        // to align with EnergyMonitor
-        batchIdx++;
-        if (batchIdx < batchesCount)
-            return;
-
+        // TODO: calculate number of samples for full cycle (time?) from EmonLib - 50Hz one cycle
         voltage = calcVrms(samplesCount * 4);
         //DEBUGLOG("EnergyMonitor", "Voltage: %f, time: %d", voltage, timer);
-        batchIdx = 0;
     }
 
 private:
