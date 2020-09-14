@@ -112,10 +112,12 @@ public:
             }
 
             for (int m = 0; m < MONITORS_COUNT; m++)
-                data.minutes[m][dt.Minute] =  getMonitor(m).getEnergy();
+                data.minutes[m][dt.Minute] = getMonitor(m).getEnergy();
             data.save(Data::SaveFlags::Minutes);
-            
+
             timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
+            if (millis() - timer > 50 * MILLIS_IN_A_SECOND)
+                timer += 60 * MILLIS_IN_A_SECOND;
         }
     }
 
