@@ -7,7 +7,7 @@
 #include <WiFiMulti.h>
 #include <ESPmDNS.h>
 
-#define DEBUG
+#define REMOTE_DEBUG
 
 #include "src/ESPAsyncWebServer/ESPAsyncWebServer.h"
 #include "src/ESPAsyncWebServer/SPIFFSEditor.h"
@@ -92,7 +92,10 @@ void setup()
   }
 
   server.begin();
-  //server.addHandler(new SPIFFSEditor(LITTLEFS, "admin", "admin"));
+
+#if defined(DEBUG) || defined(REMOTE_DEBUG)
+  server.addHandler(new SPIFFSEditor(SPIFFS /*LITTLEFS*/, "admin", "admin"));
+#endif
 
   httpUpdater.setup(&server, "admin", "admin");
 

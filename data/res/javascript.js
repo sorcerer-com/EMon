@@ -1,28 +1,13 @@
-// if data is in sessionStorage already and not refreshing
-sessionStorage.removeItem("data"); // disable caching for now
-if (sessionStorage.data && performance.navigation.type != 1) {
-	data = JSON.parse(sessionStorage.data);
-}
-else {
-	sessionStorage.removeItem("data");
-	var script = document.createElement("script");
-	script.async = false;
-	script.type = "text/javascript";
-	script.src = "../data.js";
-	script.onload = function () {
-		sessionStorage.data = JSON.stringify(data);
-	};
-	document.head.insertBefore(script, document.head.firstChild);
-}
-
 $("header").ready(function () {
-	if (!sessionStorage.data) {
-		$("header").append("<span>(loading...)</span>");
-		$("header span:last-child").css("font-size", "0.8em");
-	}
+	$("header").append("<span>(loading...)</span>");
+	$("header span:last-child").css("font-size", "0.8em");
 });
 
-$(window).on("load", function () {
+$.get("/data.json", (json) => {
+	$(window).trigger("data", json);
+});
+
+$(window).on("data", function (e, data) {
 	$("header span:last-child").remove();
 
 	// show current time warning
@@ -89,7 +74,7 @@ $(window).on("load", function () {
 			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// prev month
-	var prevBillMonth = getBillMonth() - 1;
+	var prevBillMonth = getBillMonth(data) - 1;
 	if (prevBillMonth < 1) prevBillMonth += 12;
 	var total = 0;
 	var totalPrice = 0.0;
@@ -118,6 +103,7 @@ $(window).on("load", function () {
 		$(`.cr-current-usage.monitor-${m + 1}`)
 			.append(`${value.toFixed(2)} W (${Math.round(value / total * 100)} %)`);
 	}
+	$(`.cr-current-usage.voltage`).append(`${data.current.voltage.toFixed(2)} V`);
 
 	//// Current Hour
 	var total = 0;
@@ -345,14 +331,14 @@ $(window).on("load", function () {
 	//// Year
 	var total = 0;
 	for (var t = 0; t < data.tariffsCount; t++) {
-		total += lastYear(t);
+		total += lastYear(data, t);
 	}
 	$(".ch-year-total.all-monitors").append(`${total.toFixed(2)} kWh`);
 	$(".ch-month-average.all-monitors").append(`${(total / 12).toFixed(2)} kWh`);
 	if (total == 0) total = 1;
 	var values = [];
 	for (var t = 0; t < data.tariffsCount; t++) {
-		values[t] = lastYear(t);
+		values[t] = lastYear(data, t);
 		$(`.ch-year-tariff-${t + 1}.all-monitors`)
 			.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 	}
@@ -366,14 +352,14 @@ $(window).on("load", function () {
 
 		var total = 0;
 		for (var t = 0; t < data.tariffsCount; t++) {
-			total += lastYear(t, m);
+			total += lastYear(data, t, m);
 		}
 		$(`.ch-year-total.year-monitor-${m + 1}`).append(`${total.toFixed(2)} kWh`);
 		$(`.ch-month-average.year-monitor-${m + 1}`).append(`${(total / 12).toFixed(2)} kWh`);
 		if (total == 0) total = 1;
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
-			values[t] = lastYear(t, m);
+			values[t] = lastYear(data, t, m);
 			$(`.ch-year-tariff-${t + 1}.year-monitor-${m + 1}`)
 				.append(`${values[t].toFixed(2)} kWh(${Math.round(values[t] / total * 100)} %)`);
 		}
@@ -402,7 +388,7 @@ function InitializeSwiper() {
 
 // Current
 function drawTotalConsumption(canvasName) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		// sum by tariffs
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
@@ -424,7 +410,7 @@ function drawTotalConsumption(canvasName) {
 }
 
 function drawCurrentUsage(canvasName) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		var maxValue = Math.max.apply(Math, data.current.energy);
 		drawCircularChart(
 			canvasName,
@@ -439,7 +425,7 @@ function drawCurrentUsage(canvasName) {
 }
 
 function drawLast24Hours(canvasName, monitorIdx) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		var labels = [];
 		var values = [];
 		var colors = [];
@@ -474,7 +460,7 @@ function drawLast24Hours(canvasName, monitorIdx) {
 }
 
 function drawLastMonth(canvasName, monitorIdx) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		var labels = [];
 		var dt = new Date(data.time);
 		var daysCount = new Date(dt.getUTCFullYear(), dt.getUTCMonth(), 0).getDate(); // get previous month length
@@ -513,7 +499,7 @@ function drawLastMonth(canvasName, monitorIdx) {
 
 // Sections
 function drawCurrentHour(canvasName) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
 			values.push(toKilo(data.current.hour[m]));
@@ -530,7 +516,7 @@ function drawCurrentHour(canvasName) {
 }
 
 function drawCurrentDay(canvasName) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		var labels = [];
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
@@ -551,7 +537,7 @@ function drawCurrentDay(canvasName) {
 
 // History
 function drawLastYear(canvasName, monitorIdx) {
-	$(window).on("load", function () {
+	$(window).on("data", function (e, data) {
 		// sum by tariffs
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
@@ -572,7 +558,7 @@ function drawLastYear(canvasName, monitorIdx) {
 		var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Noe", "Dec"];
 
 		// shift array so values to be ordered backward from last month
-		for (var m = 0; m < getBillMonth() - 1; m++) {
+		for (var m = 0; m < getBillMonth(data) - 1; m++) {
 			months.push(months[0]);
 			months.shift();
 			for (var t = 0; t < data.tariffsCount; t++) {
@@ -603,7 +589,7 @@ function toKilo(value) {
 	return toFloat(value) / 1000.0;
 }
 
-function getBillMonth() {
+function getBillMonth(data) {
 	var dt = new Date(data.time);
 	var month = dt.getUTCMonth() + 1;
 	if (dt.getUTCDate() < data.settings.billDay)
@@ -613,7 +599,7 @@ function getBillMonth() {
 	return month;
 }
 
-function lastYear(tariffIdx, monitorIdx) {
+function lastYear(data, tariffIdx, monitorIdx) {
 	var result = 0;
 	for (var i = 0; i < 12; i++) {
 		if (monitorIdx != undefined) {

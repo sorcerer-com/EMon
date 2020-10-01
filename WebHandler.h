@@ -7,6 +7,7 @@
 #include <SPIFFS.h>
 #include <Update.h>
 
+#include "src/ESPAsyncWebServer/AsyncJson.h"
 #include "src/ESPAsyncWebServer/ESPAsyncWebServer.h"
 #include "src/NTPClient.h"
 
@@ -28,7 +29,7 @@ public:
 
         server.on("/login", HTTP_GET, [&](AsyncWebServerRequest *request) { handleLogin(request); });
         server.on("/login", HTTP_POST, [&](AsyncWebServerRequest *request) { handleLogin(request); });
-        server.on("/data.js", HTTP_GET, [&](AsyncWebServerRequest *request) { handleDataFile(request); });
+        server.on("/data.json", HTTP_GET, [&](AsyncWebServerRequest *request) { handleDataFile(request); });
         server.on("/settings", HTTP_POST, [&](AsyncWebServerRequest *request) { handleSettings(request); },
             [&](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) { handleUpdate(request, filename, index, data, len, final); });
         server.on("/raw", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRaw(request); });
@@ -99,140 +100,98 @@ private:
 
         digitalWrite(ledPin, LOW);
 
+        AsyncJsonResponse *response = new AsyncJsonResponse(false, 16384);
+
         unsigned long timer = millis();
-        String result = SF("var data = {};\n");
-        result += SF("data.version = '") + String(VERSION) + SF("';\n");
-        result += SF("data.monitorsCount = ") + String(MONITORS_COUNT) + SF(";\n");
-        result += SF("data.tariffsCount = ") + String(TARIFFS_COUNT) + SF(";\n");
+        JsonObject root = response->getRoot();
+        root["version"] = VERSION;
+        root["monitorsCount"] = MONITORS_COUNT;
+        root["tariffsCount"] = TARIFFS_COUNT;
 
         date_time dt = DataManager.getCurrentTime();
-        result += SF("data.time = '") + dateTimeToString(dt, true) + SF("';\n");
-        result += SF("data.startTime = ") + String(DataManager.data.base.startTime) + SF(";\n");
-        result += SF("\n");
+        root["time"] = dateTimeToString(dt, true);
+        root["startTime"] = DataManager.data.base.startTime;
 
-        result += SF("data.settings = {};\n");
-        result += SF("data.settings.timeZone = ") + String(DataManager.data.settings.timeZone) + SF(";\n");
-        result += SF("data.settings.tariffStartHours = [];\n");
-        result += SF("data.settings.tariffPrices = [];\n");
+        // settings
+        root["settings"]["timeZone"] = DataManager.data.settings.timeZone;
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
-            result += SF("data.settings.tariffStartHours[") + String(t) + SF("] = ");
-            result += String(DataManager.data.settings.tariffStartHours[t]) + SF(";\n");
-            result += SF("data.settings.tariffPrices[") + String(t) + SF("] = ");
-            result += String(DataManager.data.settings.tariffPrices[t], 5) + SF(";\n");
+            root["settings"]["tariffStartHours"][t] = DataManager.data.settings.tariffStartHours[t];
+            root["settings"]["tariffPrices"][t] = DataManager.data.settings.tariffPrices[t];
         }
-        result += SF("data.settings.billDay = ") + String(DataManager.data.settings.billDay) + SF(";\n");
-        result += SF("data.settings.currencySymbols = '") + String(DataManager.data.settings.currencySymbols) + SF("';\n");
-        result += SF("data.settings.monitorsNames = [];\n");
+        root["settings"]["billDay"] = DataManager.data.settings.billDay;
+        root["settings"]["currencySymbols"] = DataManager.data.settings.currencySymbols;
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("data.settings.monitorsNames[") + String(m) + SF("] = '");
-            result += String(DataManager.data.settings.monitorsNames[m]) + SF("';\n");
+            root["settings"]["monitorsNames"][m] = DataManager.data.settings.monitorsNames[m];
         }
-        result += SF("data.settings.coefficient = ") + String(DataManager.data.settings.coefficient) + SF(";\n");
-        result += SF("data.settings.wifi_ssid = '") + String(DataManager.data.settings.wifi_ssid) + SF("';\n");
-        result += SF("data.settings.wifi_passphrase = '") + String(DataManager.data.settings.wifi_passphrase) + SF("';\n");
-        result += SF("data.settings.wifi_ip = '") + String(IPAddress(DataManager.data.settings.wifi_ip).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_gateway = '") + String(IPAddress(DataManager.data.settings.wifi_gateway).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_subnet = '") + String(IPAddress(DataManager.data.settings.wifi_subnet).toString()) + SF("';\n");
-        result += SF("data.settings.wifi_dns = '") + String(IPAddress(DataManager.data.settings.wifi_dns).toString()) + SF("';\n");
-        result += SF("\n");
+        root["settings"]["coefficient"] = DataManager.data.settings.coefficient;
+        root["settings"]["wifi_ssid"] = DataManager.data.settings.wifi_ssid;
+        root["settings"]["wifi_passphrase"] = DataManager.data.settings.wifi_passphrase;
+        root["settings"]["wifi_ip"] = DataManager.data.settings.wifi_ip;
+        root["settings"]["wifi_gateway"] = DataManager.data.settings.wifi_gateway;
+        root["settings"]["wifi_subnet"] = DataManager.data.settings.wifi_subnet;
+        root["settings"]["wifi_dns"] = DataManager.data.settings.wifi_dns;
 
-        result += SF("data.current = {};\n");
-        result += SF("data.current.energy = [];\n");
-        result += SF("data.current.hour = [];\n");
-        result += SF("data.current.day = [];\n");
-        result += SF("data.current.month = [];\n");
+        // current data
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("// Monitor ") + String(m) + SF("\n");
-            result += SF("data.current.energy[") + String(m) + SF("] = ");
-            result += String(DataManager.getEnergy(m)) + SF(";\n");
-            result += SF("data.current.hour[") + String(m) + SF("] = ");
-            result += String(DataManager.getCurrentHourEnergy(m)) + SF(";\n");
+            root["current"]["energy"][m] = DataManager.getEnergy(m);
+            root["current"]["hour"][m] = DataManager.getCurrentHourEnergy(m);
 
             uint32_t values[TARIFFS_COUNT];
             DataManager.getCurrentDayEnergy(m, values);
-            result += SF("data.current.day[") + String(m) + SF("] = [");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += String(values[t]);
-                if (t < TARIFFS_COUNT - 1)
-                    result += SF(", ");
+                root["current"]["day"][m][t] = values[t];
             }
-            result += SF("];\n");
 
             DataManager.getCurrentMonthEnergy(m, values);
-            result += SF("data.current.month[") + String(m) + SF("] = [");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                result += String(values[t]);
-                if (t < TARIFFS_COUNT - 1)
-                    result += SF(", ");
+                root["current"]["month"][m][t] = values[t];
             }
-            result += SF("];\n");
         }
-        result += SF("\n");
 
-        result += SF("data.current.voltage = ") + DataManager.getVoltage() + SF(";\n\n");
+        root["current"]["voltage"] = DataManager.getVoltage();
 
-        result += SF("data.hours = [];\n");
+        // last 24 hours
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("// Monitor ") + String(m) + SF("\n");
-            result += SF("data.hours[") + String(m) + SF("] = [");
             for (int h = 0; h < 24; h++)
             {
-                result += String(DataManager.data.base.hours[h][m]);
-                if (h < 23)
-                    result += SF(", ");
+                root["hours"][m][h] = DataManager.data.base.hours[h][m];
             }
-            result += SF("];\n");
         }
-        result += SF("\n");
 
-        result += SF("data.days = [];\n");
+        // last 31 days
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("// Monitor ") + String(m) + SF("\n");
-            result += SF("data.days[") + String(m) + SF("] = [];\n");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                //result += SF("// Tariff ") + String(t) + SF("\n");
-                result += SF("data.days[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int d = 0; d < 31; d++)
                 {
-                    result += String(DataManager.data.base.days[d][t][m]);
-                    if (d < 30)
-                        result += SF(", ");
+                    root["days"][m][t][d] = DataManager.data.base.days[d][t][m];
                 }
-                result += SF("];\n");
             }
         }
-        result += SF("\n");
 
-        result += SF("data.months = [];\n");
+        // last 12 months
         for (int m = 0; m < MONITORS_COUNT; m++)
         {
-            result += SF("// Monitor ") + String(m) + SF("\n");
-            result += SF("data.months[") + String(m) + SF("] = [];\n");
             for (int t = 0; t < TARIFFS_COUNT; t++)
             {
-                //result += SF("// Tariff ") + String(t) + SF("\n");
-                result += SF("data.months[") + String(m) + SF("][") + String(t) + SF("] = [");
                 for (int i = 0; i < 12; i++)
                 {
-                    result += String(DataManager.data.base.months[i][t][m]);
-                    if (i < 11)
-                        result += SF(", ");
+                    root["months"][m][t][i] = DataManager.data.base.months[i][t][m];
                 }
-                result += SF("];\n");
             }
         }
-        result += SF("// ") + String(millis() - timer) + SF(", ") + String(result.length());
-        DEBUGLOG("WebHandler", "Generating data.js (%d bytes) for %d millisec", result.length(), (millis() - timer));
 
-        request->send(200, "application/javascript", result);
+        size_t len = response->setLength();
+        DEBUGLOG("WebHandler", "Generating data.json (%d bytes) for %d millisec", len, (millis() - timer));
+
+        request->send(response);
         digitalWrite(ledPin, HIGH);
     }
 
@@ -355,7 +314,7 @@ private:
             DEBUGLOG("WebHandler", response.c_str());
 
             request->client()->setNoDelay(true);
-            response = SF("<META http-equiv=\"refresh\" content=\"15;URL=./\">") + response + SF("! Rebooting...\n");
+            response = SF("<META http-equiv=\"refresh\" content=\"5;URL=./\">") + response + SF("! Rebooting...\n");
             request->send(200, "text/html", response);
             delay(100);
             request->client()->stop();
