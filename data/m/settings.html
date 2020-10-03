@@ -41,7 +41,7 @@
 
 	<script>
 		var date, startDate;
-		$(window).on("data", function (e, data) {
+		$(window).on("data", function (_, data) {
 			for (var key in data.settings) {
 				var value = data.settings[key];
 				if (Array.isArray(value)) {

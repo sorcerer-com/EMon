@@ -1,33 +1,48 @@
+var loading = true;
 $("header").ready(function () {
-	$("header").append("<span>(loading...)</span>");
-	$("header span:last-child").css("font-size", "0.8em");
+	if (loading) {
+		$("header span").html("(loading...)").css("font-size", "0.8em");
+	}
 });
 
-$.get("/data.json", (json) => {
-	$(window).trigger("data", json);
+$(() => {
+	loadData();
+	// only consumption page has realtime data, so else refresh once per minute
+	if (window.location.href.includes("consumption.html")) {
+		setInterval(loadData, 5000);
+	} else {
+		setInterval(loadData, 60000);
+	}
 });
+
+// refresh data only if the page is visible
+var active = true;
+$(window).focus(() => active = true).blur(() => active = false);
+
+function loadData() {
+	if (!active)
+		return;
+
+	$.get("/data.json", (json) => {
+		loading = false;
+		$("header").css("background-color", "#1995AD");
+		$("header span").html("");
+		$(window).trigger("data", json);
+	}).fail(() => {
+		if (loading) {
+			$("header").css("background-color", "#A81919");
+			$("header span").html("(the data cannot be loaded, please refresh)");
+		}
+	});
+}
 
 $(window).on("data", function (e, data) {
-	$("header span:last-child").remove();
-
 	// show current time warning
 	var date = new Date(data.time);
 	date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
 	if (new Date() - date > 60 * 1000) { // if time difference is more than 1 minute
-		$("header").append("<a href='settings.html'>(set current time)</a>");
-		$("header a:last-child").css("font-size", "0.8em").css("color", "red");
-	}
-
-	// data isn't loaded
-	try {
-		if (data == undefined) {
-			throw new ReferenceError("data");
-		}
-	} catch (e) {
-		if (e instanceof ReferenceError) {
-			$("header").css("background-color", "#A81919")
-				.append("(the data cannot be loaded, please refresh)");
-		}
+		$("header span").html("<a href='settings.html'>(set current time)</a>");
+		$("header span a").css("font-size", "0.8em").css("color", "red");
 	}
 
 	if ($(".swiper-container").length > 0) {
@@ -35,6 +50,7 @@ $(window).on("data", function (e, data) {
 		InitializeSwiper();
 	}
 
+	// TODO: maybe add tariffs hint - price
 	// add monitors hints
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
@@ -61,8 +77,8 @@ $(window).on("data", function (e, data) {
 	// by tariffs
 	if (total == 0) total = 1;
 	for (var t = 0; t < data.tariffsCount; t++) {
-		$(`.cr-total.tariff-${t + 1}`)
-			.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
+		$(`.cr-total.tariff-${t + 1} span`)
+			.html(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 	}
 	// by monitors
 	for (var m = 0; m < data.monitorsCount; m++) {
@@ -70,8 +86,8 @@ $(window).on("data", function (e, data) {
 		for (var t = 0; t < data.tariffsCount; t++) {
 			value += toKilo(data.current.month[m][t]);
 		}
-		$(`.cr-total.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-total.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// prev month
 	var prevBillMonth = getBillMonth(data) - 1;
@@ -87,10 +103,10 @@ $(window).on("data", function (e, data) {
 		total += values[t];
 		totalPrice += values[t] * data.settings.tariffPrices[t];
 	}
-	$(".cr-total-prevMonth-price")
-		.append(`${totalPrice.toFixed(2)} ${data.settings.currencySymbols}`);
+	$(".cr-total-prevMonth-price span")
+		.html(`${totalPrice.toFixed(2)} ${data.settings.currencySymbols}`);
 	$(".cr-total-prevMonth-value")
-		.append(` (${total.toFixed(2)} kWh, ${values.map(function (a) { return a.toFixed(2); }).join(" / ")})`);
+		.html(` (${total.toFixed(2)} kWh, ${values.map(function (a) { return a.toFixed(2); }).join(" / ")})`);
 
 	//// Current Usage
 	var total = 0;
@@ -100,21 +116,21 @@ $(window).on("data", function (e, data) {
 	if (total == 0) total = 1;
 	for (var m = 0; m < data.monitorsCount; m++) {
 		var value = data.current.energy[m];
-		$(`.cr-current-usage.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} W (${Math.round(value / total * 100)} %)`);
+		$(`.cr-current-usage.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} W (${Math.round(value / total * 100)} %)`);
 	}
-	$(`.cr-current-usage.voltage`).append(`${data.current.voltage.toFixed(2)} V`);
+	$(`.cr-current-usage.voltage span`).html(`${data.current.voltage.toFixed(2)} V`);
 
 	//// Current Hour
 	var total = 0;
 	for (var m = 0; m < data.monitorsCount; m++) {
-		total += toKilo(data.current.hour[m]);
+		total += toFloat(data.current.hour[m]);
 	}
 	if (total == 0) total = 1;
 	for (var m = 0; m < data.monitorsCount; m++) {
-		var value = toKilo(data.current.hour[m]);
-		$(`.cr-current-hour.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		var value = toFloat(data.current.hour[m]);
+		$(`.cr-current-hour.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} Wh (${Math.round(value / total * 100)} %)`);
 	}
 
 	//// Current Day
@@ -125,8 +141,8 @@ $(window).on("data", function (e, data) {
 			total += toKilo(data.current.day[m][t]);
 		}
 	}
-	$(`.cr-current-day-total`)
-		.append(`${total.toFixed(2)} kWh`);
+	$(`.cr-current-day-total span`)
+		.html(`${total.toFixed(2)} kWh`);
 	if (total == 0) total = 1;
 	// by monitors
 	for (var m = 0; m < data.monitorsCount; m++) {
@@ -134,8 +150,8 @@ $(window).on("data", function (e, data) {
 		for (var t = 0; t < data.tariffsCount; t++) {
 			value += toKilo(data.current.day[m][t]);
 		}
-		$(`.cr-current-day.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-current-day.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// by tariffs
 	for (var t = 0; t < data.tariffsCount; t++) {
@@ -143,8 +159,8 @@ $(window).on("data", function (e, data) {
 		for (var m = 0; m < data.monitorsCount; m++) {
 			value += toKilo(data.current.day[m][t]);
 		}
-		$(`.cr-current-day.tariff-${t + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-current-day.tariff-${t + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 
 	//// Last 24 Hours
@@ -158,9 +174,9 @@ $(window).on("data", function (e, data) {
 		}
 		total += values[m];
 	}
-	$(`.cr-last-24-hours-total`).append(`${total.toFixed(2)} kWh`);
-	$(`.cr-last-24-hours-average`)
-		.append(`${(total / 24).toFixed(2)} kWh (${values.map(function (a) { return (a / 24).toFixed(2); }).join("/")})`);
+	$(`.cr-last-24-hours-total span`).html(`${total.toFixed(2)} kWh`);
+	$(`.cr-last-24-hours-average span`)
+		.html(`${(total / 24).toFixed(2)} kWh (${values.map(function (a) { return (a / 24).toFixed(2); }).join("/")})`);
 	// by tariffs
 	var values = [];
 	for (var t = 0; t < data.tariffsCount; t++) {
@@ -181,8 +197,8 @@ $(window).on("data", function (e, data) {
 	}
 	if (total == 0) total = 1;
 	for (var t = 0; t < data.tariffsCount; t++) {
-		$(`.cr-last-24-hours.tariff-${t + 1}`)
-			.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
+		$(`.cr-last-24-hours.tariff-${t + 1} span`)
+			.html(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 	}
 	// by monitors
 	for (var m = 0; m < data.monitorsCount; m++) {
@@ -190,8 +206,8 @@ $(window).on("data", function (e, data) {
 		for (var h = 0; h < 24; h++) {
 			value += toKilo(data.hours[m][h]);
 		}
-		$(`.cr-last-24-hours.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-last-24-hours.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// current hour
 	var total = 0;
@@ -200,8 +216,8 @@ $(window).on("data", function (e, data) {
 		values.push(toKilo(data.current.hour[m]))
 		total += values[m];
 	}
-	$(`.cr-last-24-hours-current`)
-		.append(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
+	$(`.cr-last-24-hours-current span`)
+		.html(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
 
 	//// Last Month
 	// total
@@ -218,9 +234,9 @@ $(window).on("data", function (e, data) {
 		}
 		total += values[t];
 	}
-	$(`.cr-last-month-total`).append(`${total.toFixed(2)} kWh`);
-	$(`.cr-last-month-average`)
-		.append(`${(total / daysCount).toFixed(2)} kWh (${values.map(function (a) { return (a / daysCount).toFixed(2); }).join("/")})`);
+	$(`.cr-last-month-total span`).html(`${total.toFixed(2)} kWh`);
+	$(`.cr-last-month-average span`)
+		.html(`${(total / daysCount).toFixed(2)} kWh (${values.map(function (a) { return (a / daysCount).toFixed(2); }).join("/")})`);
 	if (total == 0) total = 1;
 	// by tariffs
 	for (var t = 0; t < data.tariffsCount; t++) {
@@ -230,8 +246,8 @@ $(window).on("data", function (e, data) {
 				value += toKilo(data.days[m][t][d]);
 			}
 		}
-		$(`.cr-last-month.tariff-${t + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-last-month.tariff-${t + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// by monitors
 	for (var m = 0; m < data.monitorsCount; m++) {
@@ -241,8 +257,8 @@ $(window).on("data", function (e, data) {
 				value += toKilo(data.days[m][t][d]);
 			}
 		}
-		$(`.cr-last-month.monitor-${m + 1}`)
-			.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+		$(`.cr-last-month.monitor-${m + 1} span`)
+			.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 	}
 	// current day
 	var total = 0;
@@ -254,15 +270,15 @@ $(window).on("data", function (e, data) {
 		}
 		total += values[t];
 	}
-	$(`.cr-last-month-current`)
-		.append(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
+	$(`.cr-last-month-current span`)
+		.html(`${total.toFixed(2)} kWh (${values.map(function (a) { return a.toFixed(2); }).join("/")})`);
 
 
 	// Monitors
 	//// Last 24 hours per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
-			$(`.section-title.last-24-hours-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
+			$(`.section-title.last-24-hours-monitor-${m + 1} span`).html(` (${data.settings.monitorsNames[m]})`);
 		}
 
 		// total
@@ -282,21 +298,21 @@ $(window).on("data", function (e, data) {
 			else if (h >= data.settings.tariffStartHours[2] || h < data.settings.tariffStartHours[0])
 				values[2] += value;
 		}
-		$(`.cs-last-24-hours-monitor-${m + 1}-total`).append(`${total.toFixed(2)} kWh`);
-		$(`.cs-last-24-hours-monitor-${m + 1}-average`)
-			.append(`${(total / 24).toFixed(2)} kWh (${values.map(function (a) { return (a / 24).toFixed(2); }).join("/")})`);
+		$(`.cs-last-24-hours-monitor-${m + 1}-total span`).html(`${total.toFixed(2)} kWh`);
+		$(`.cs-last-24-hours-monitor-${m + 1}-average span`)
+			.html(`${(total / 24).toFixed(2)} kWh (${values.map(function (a) { return (a / 24).toFixed(2); }).join("/")})`);
 		if (total == 0) total = 1;
 		// by tariffs
 		for (var t = 0; t < data.tariffsCount; t++) {
-			$(`.cs-last-24-hours-monitor-${m + 1}.tariff-${t + 1}`)
-				.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
+			$(`.cs-last-24-hours-monitor-${m + 1}.tariff-${t + 1} span`)
+				.html(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 		}
 	}
 
 	//// Last month per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
-			$(`.section-title.last-month-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
+			$(`.section-title.last-month-monitor-${m + 1} span`).html(` (${data.settings.monitorsNames[m]})`);
 		}
 
 		// total
@@ -311,9 +327,9 @@ $(window).on("data", function (e, data) {
 			}
 			total += values[t];
 		}
-		$(`.cs-last-month-monitor-${m + 1}-total`).append(`${total.toFixed(2)} kWh`);
-		$(`.cs-last-month-monitor-${m + 1}-average`)
-			.append(`${(total / daysCount).toFixed(2)} kWh (${values.map(function (a) { return (a / daysCount).toFixed(2); }).join("/")})`);
+		$(`.cs-last-month-monitor-${m + 1}-total span`).html(`${total.toFixed(2)} kWh`);
+		$(`.cs-last-month-monitor-${m + 1}-average span`)
+			.html(`${(total / daysCount).toFixed(2)} kWh (${values.map(function (a) { return (a / daysCount).toFixed(2); }).join("/")})`);
 		if (total == 0) total = 1;
 		// by tariffs
 		for (var t = 0; t < data.tariffsCount; t++) {
@@ -321,8 +337,8 @@ $(window).on("data", function (e, data) {
 			for (var d = 0; d < daysCount; d++) {
 				value += toKilo(data.days[m][t][d]);
 			}
-			$(`.cs-last-month-monitor-${m + 1}.tariff-${t + 1}`)
-				.append(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
+			$(`.cs-last-month-monitor-${m + 1}.tariff-${t + 1} span`)
+				.html(`${value.toFixed(2)} kWh (${Math.round(value / total * 100)} %)`);
 		}
 	}
 
@@ -333,37 +349,37 @@ $(window).on("data", function (e, data) {
 	for (var t = 0; t < data.tariffsCount; t++) {
 		total += lastYear(data, t);
 	}
-	$(".ch-year-total.all-monitors").append(`${total.toFixed(2)} kWh`);
-	$(".ch-month-average.all-monitors").append(`${(total / 12).toFixed(2)} kWh`);
+	$(".ch-year-total.all-monitors span").html(`${total.toFixed(2)} kWh`);
+	$(".ch-month-average.all-monitors span").html(`${(total / 12).toFixed(2)} kWh`);
 	if (total == 0) total = 1;
 	var values = [];
 	for (var t = 0; t < data.tariffsCount; t++) {
 		values[t] = lastYear(data, t);
-		$(`.ch-year-tariff-${t + 1}.all-monitors`)
-			.append(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
+		$(`.ch-year-tariff-${t + 1}.all-monitors span`)
+			.html(`${values[t].toFixed(2)} kWh (${Math.round(values[t] / total * 100)} %)`);
 	}
-	$(".ch-month-average.all-monitors").append(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
+	$(".ch-month-average.all-monitors span").html(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
 
 	//// Year per monitor
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
-			$(`.section-title.year-monitor-${m + 1}`).append(` (${data.settings.monitorsNames[m]})`);
+			$(`.section-title.year-monitor-${m + 1} span`).html(` (${data.settings.monitorsNames[m]})`);
 		}
 
 		var total = 0;
 		for (var t = 0; t < data.tariffsCount; t++) {
 			total += lastYear(data, t, m);
 		}
-		$(`.ch-year-total.year-monitor-${m + 1}`).append(`${total.toFixed(2)} kWh`);
-		$(`.ch-month-average.year-monitor-${m + 1}`).append(`${(total / 12).toFixed(2)} kWh`);
+		$(`.ch-year-total.year-monitor-${m + 1} span`).html(`${total.toFixed(2)} kWh`);
+		$(`.ch-month-average.year-monitor-${m + 1} span`).html(`${(total / 12).toFixed(2)} kWh`);
 		if (total == 0) total = 1;
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
 			values[t] = lastYear(data, t, m);
-			$(`.ch-year-tariff-${t + 1}.year-monitor-${m + 1}`)
-				.append(`${values[t].toFixed(2)} kWh(${Math.round(values[t] / total * 100)} %)`);
+			$(`.ch-year-tariff-${t + 1}.year-monitor-${m + 1} span`)
+				.html(`${values[t].toFixed(2)} kWh(${Math.round(values[t] / total * 100)} %)`);
 		}
-		$(`.ch-month-average.year-monitor-${m + 1}`).append(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
+		$(`.ch-month-average.year-monitor-${m + 1} span`).html(` (${values.map(function (a) { return (a / 12).toFixed(2); }).join("/")})`)
 	}
 });
 
@@ -398,6 +414,7 @@ function drawTotalConsumption(canvasName) {
 			}
 		}
 
+		clearCanvas(canvasName);
 		drawDonutChart(
 			canvasName,
 			values,
@@ -412,6 +429,8 @@ function drawTotalConsumption(canvasName) {
 function drawCurrentUsage(canvasName) {
 	$(window).on("data", function (e, data) {
 		var maxValue = Math.max.apply(Math, data.current.energy);
+
+		clearCanvas(canvasName);
 		drawCircularChart(
 			canvasName,
 			data.current.energy,
@@ -451,6 +470,7 @@ function drawLast24Hours(canvasName, monitorIdx) {
 				colors.push("#68829e");
 		}
 
+		clearCanvas(canvasName);
 		drawBarChart(
 			canvasName,
 			labels,
@@ -490,6 +510,7 @@ function drawLastMonth(canvasName, monitorIdx) {
 		}
 		values.reverse();
 
+		clearCanvas(canvasName);
 		drawLineChart(
 			canvasName,
 			labels,
@@ -502,15 +523,16 @@ function drawCurrentHour(canvasName) {
 	$(window).on("data", function (e, data) {
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
-			values.push(toKilo(data.current.hour[m]));
+			values.push(toFloat(data.current.hour[m]));
 		}
 
+		clearCanvas(canvasName);
 		drawDonutChart(
 			canvasName,
 			values,
 			{
 				label: "Total",
-				units: "kWh"
+				units: "Wh"
 			});
 	});
 }
@@ -527,6 +549,7 @@ function drawCurrentDay(canvasName) {
 			}
 		}
 
+		clearCanvas(canvasName);
 		drawVerticalMultiBarsChart(
 			canvasName,
 			labels,
@@ -571,6 +594,7 @@ function drawLastYear(canvasName, monitorIdx) {
 			values[t].reverse();
 		}
 
+		clearCanvas(canvasName);
 		drawVerticalSplitBarChart(
 			canvasName,
 			months,
@@ -612,4 +636,10 @@ function lastYear(data, tariffIdx, monitorIdx) {
 		}
 	}
 	return result;
+}
+
+function clearCanvas(canvasName) {
+	var canvas = document.getElementById(canvasName);
+	var ctx = canvas.getContext("2d");
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
 }

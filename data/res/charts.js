@@ -358,9 +358,10 @@ function drawVerticalMultiBarsChart(canvasName, labels, values, options) {
 	// chart
 	var canvas = document.getElementById(canvasName);
 	var ctx = canvas.getContext("2d");
+	ctx.font = options.font;
 
 	var maxCount = Math.max.apply(Math, values.map(function (a) { return a.length; }));
-	var maxLabelWidth = Math.max.apply(Math, labels.map(function (a) { return ctx.measureText(a).width * 1.6; }));
+	var maxLabelWidth = Math.max.apply(Math, labels.map(function (a) { return ctx.measureText(a).width; })) + 8;
 	var gridWidth = canvas.width - maxLabelWidth - 65;
 	var gridHeight = canvas.height;
 
@@ -374,7 +375,6 @@ function drawVerticalMultiBarsChart(canvasName, labels, values, options) {
 	var max = Math.max.apply(Math, maxs);
 	var coef = gridWidth / max;
 
-	ctx.font = options.font;
 	var textHeight = parseInt(ctx.font);
 	for (var i = 0; i < values.length; i++) {
 		// label
