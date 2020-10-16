@@ -106,7 +106,7 @@ private:
             sumI += sqI;
         }
 
-        temp_irms = sqrt(sumI / samplesCount) * multiplier / 20; // 24;
+        temp_irms = sqrt(sumI / samplesCount) * multiplier / 41.4; // * 30(amps per 1V) * 3.3V / 4096(ADC)
 
         //Reset accumulators
         sumI = 0;
