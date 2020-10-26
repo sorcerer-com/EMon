@@ -40,7 +40,7 @@ $(window).on("data", function (e, data) {
 	// show current time warning
 	var date = new Date(data.time);
 	date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-	if (new Date() - date > 60 * 1000) { // if time difference is more than 1 minute
+	if (Math.abs(new Date() - date) > 60 * 1000) { // if time difference is more than 1 minute
 		$("header span").html("<a href='settings.html'>(set current time)</a>");
 		$("header span a").css("font-size", "0.8em").css("color", "red");
 	}
