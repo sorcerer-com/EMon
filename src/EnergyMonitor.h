@@ -45,8 +45,10 @@ public:
 
         if (clear)
         {
+#ifndef REMOTE_DEBUG // only on serial debug
             DEBUGLOG("EnergyMonitor", "InputPin: %d, Power: %d, Duration: %d, Counter: %d, Energy: %d",
                      inputPin, (uint32_t)power, delta, counter, (uint32_t)energy);
+#endif
 
             timer = millis();
             counter = 0;

@@ -91,24 +91,20 @@ public:
     {
         if (saveFlags & SaveFlags::Base)
         {
-            DEBUGLOG("Data", "Write base data with size: %d", sizeof(base));
             writeFile("/base.dat", (uint8_t *)&base, sizeof(base));
         }
 
         if (saveFlags & SaveFlags::Minutes)
         {
-            DEBUGLOG("Data", "Write minutes data with size: %d", sizeof(minutes));
             writeFile("/minutes.dat", (uint8_t *)minutes, sizeof(minutes));
         }
         if (saveFlags & SaveFlags::ResetMinutes)
         {
-            DEBUGLOG("Data", "Reset minutes data");
             memset(minutes, 0xFF, sizeof(minutes));
         }
 
         if (saveFlags & SaveFlags::Settings)
         {
-            DEBUGLOG("Data", "Write settings with size: %d", sizeof(settings));
             writeFile("/settings.dat", (uint8_t *)&settings, sizeof(settings));
         }
     }
@@ -151,7 +147,7 @@ public:
 private:
     inline bool readFile(const char *path, uint8_t *buf, size_t size)
     {
-        DEBUGLOG("Data", "Reading file: %s", path);
+        DEBUGLOG("Data", "Reading file: %s with size: %d bytes", path, size);
 
         File file = LITTLEFS.open(path, FILE_READ);
         if (!file)
@@ -173,7 +169,9 @@ private:
 
     inline bool writeFile(const char *path, const uint8_t *buf, size_t size)
     {
-        DEBUGLOG("Data", "Writing file: %s", path);
+#ifndef REMOTE_DEBUG // only on serial debug
+        DEBUGLOG("Data", "Writing file: %s with size: %d bytes", path, size);
+#endif
 
         File file = LITTLEFS.open(path, FILE_WRITE);
         if (!file)

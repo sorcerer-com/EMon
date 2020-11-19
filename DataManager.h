@@ -57,21 +57,6 @@ public:
         uint32_t elapsed = millis() - timer;
         if (elapsed > MILLIS_IN_A_MINUTE)
         {
-            // if millis rollover
-            if (timer > millis() && internet)
-            {
-                if (internet) // if there is internet fix the start time by reseting
-                    startTime = 0;
-                else
-                {
-                    // if there is no internet add max millis value to startTime and write to storage
-                    startTime += ((uint32_t)-1) / MILLIS_IN_A_SECOND;
-                    data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
-                    data.save(Data::SaveFlags::Base);
-                }
-                DEBUGLOG("DataManager", "Millis rollover, internet: %d", internet)
-            }
-
             // if time isn't received in the setup try again to get it
             if (startTime == 0)
             {
@@ -80,7 +65,9 @@ public:
             }
 
             date_time dt = getCurrentTime();
+#ifndef REMOTE_DEBUG // only on serial debug
             DEBUGLOG("DataManager", "Current time: %s", dateTimeToString(dt).c_str());
+#endif
 
             // if new hour begins
             if (dt.Hour != data.base.lastSavedHour)
@@ -114,6 +101,21 @@ public:
             for (int m = 0; m < MONITORS_COUNT; m++)
                 data.minutes[m][dt.Minute] = getMonitor(m).getEnergy();
             data.save(Data::SaveFlags::Minutes);
+
+            // if millis rollover
+            if (millis() > 4000000000) // rollover at 4294967296
+            {
+                if (internet) // if there is internet fix the start time by reseting
+                    startTime = 0;
+                else
+                {
+                    // if there is no internet add millis value to startTime and write to storage
+                    data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
+                    data.save(Data::SaveFlags::Base);
+                }
+                DEBUGLOG("DataManager", "Millis rollover, internet: %d", internet);
+                ESP.restart();
+            }
 
             timer = millis() - dt.Second * MILLIS_IN_A_SECOND - (elapsed - MILLIS_IN_A_MINUTE);
             if (millis() - timer > 50 * MILLIS_IN_A_SECOND)
@@ -221,6 +223,7 @@ public:
         data.base.startTime = value;
         startTime = value;
         startTime -= millis() / MILLIS_IN_A_SECOND;
+        DEBUGLOG("DataManager", "Set current time: %s", dateTimeToString(getCurrentTime()).c_str());
         return true;
     }
 
