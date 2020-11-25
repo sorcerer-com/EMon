@@ -168,6 +168,13 @@
 				<input type="submit" value="Update time" onclick="setTime()">
 			</form>
 			<hr />
+			<form>
+				<p><input type="button" value="Import Settings" onclick="importSettings()"></p>
+				<input type="button" value="Export Settings" onclick="exportSettings()">
+				<p><input type="button" value="Import Data" onclick="importData()"></p>
+				<input type="button" value="Export Data" onclick="exportData()">
+			</form>
+			<hr />
 			<form id="factory_reset" action="/settings" method="post">
 				<input type="hidden" name="factory_reset" value="true">
 				<input type="submit" value="Factory Reset" onclick="return confirm('Are you sure?')">

@@ -604,6 +604,43 @@ function drawLastYear(canvasName, monitorIdx) {
 	});
 }
 
+function importSettings() {
+	loadFromFile(".json", content => {
+		if (confirm("Are you sure?")) {
+			$.post("/settings", JSON.parse(content), () => location.reload());
+		}
+	});
+}
+
+function exportSettings() {
+	$.get("/data.json", (json) => {
+		var settings = JSON.stringify(json["settings"], null, 2);
+		saveToFile("settings.json", settings);
+	});
+}
+
+function importData() {
+	loadFromFile(".json", content => {
+		if (confirm("Are you sure?")) {
+			$.ajax({
+				'type': 'POST',
+				'url': "/import",
+				'contentType': 'application/json',
+				'data': content,
+				'dataType': 'json',
+				function() { location.reload(); }
+			});
+		}
+	});
+}
+
+function exportData() {
+	$.get("/data.json", (json) => {
+		var data = JSON.stringify({ "hours": json["hours"], "days": json["days"], "months": json["months"] }, null, 2)
+		saveToFile("data.json", data);
+	});
+}
+
 
 function toFloat(value) {
 	return value / 100.0;
@@ -642,4 +679,27 @@ function clearCanvas(canvasName) {
 	var canvas = document.getElementById(canvasName);
 	var ctx = canvas.getContext("2d");
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveToFile(filename, content) {
+	var a = document.createElement("a");
+	var file = new Blob([content], {type: "text/plain"});
+	a.href = URL.createObjectURL(file);
+	a.download = filename;
+	a.click();
+}
+
+function loadFromFile(extension, handler) {
+	var input = document.createElement("input");
+	input.type = "file";
+	input.accept = extension;
+	input.addEventListener('change', function (e) {
+		var file = e.target.files[0];
+		var reader = new FileReader();
+		reader.onload = function (evt) {
+			handler(evt.target.result);
+		}
+		reader.readAsText(file)
+	}, false);
+	input.click();
 }

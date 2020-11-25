@@ -36,6 +36,10 @@ public:
         server.on("/data", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRawData(request); });
         server.on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request) { handleRestart(request); });
 
+        AsyncCallbackJsonWebHandler* importHandler = new AsyncCallbackJsonWebHandler("/import", [&](AsyncWebServerRequest *request, JsonVariant &json) { handleImport(request, json); }, 16384);
+        importHandler->setMethod(HTTP_POST);
+        server.addHandler(importHandler);
+
         server.onNotFound([&](AsyncWebServerRequest *request) { request->send(404, "text/plain", F("404: Not Found")); });
     }
 
@@ -395,6 +399,64 @@ private:
         }
         delay(0);
 
+        digitalWrite(ledPin, HIGH);
+    }
+
+    void handleImport(AsyncWebServerRequest *request, JsonVariant &json)
+    {
+        if (!authenticate(request))
+            return;
+
+        digitalWrite(ledPin, LOW);
+
+        JsonObject jsonObj = json.as<JsonObject>();
+        for (const JsonPair kv : jsonObj)
+        {
+            DEBUGLOG("WebHandler", "Importing data for '%s'", kv.key().c_str());
+            int m = 0;
+            for (const JsonVariant monitorData : kv.value().as<JsonArray>())
+            {
+                if (kv.key() == "hours")
+                {
+                    int h = 0;
+                    for (const JsonVariant hourData : monitorData.as<JsonArray>())
+                    {
+                        DataManager.data.base.hours[h][m] = hourData.as<uint32_t>();
+                        h++;
+                    }
+                }
+                else
+                {
+                    int t = 0;
+                    for (const JsonVariant tariffData : monitorData.as<JsonArray>())
+                    {
+                        if (kv.key() == "days")
+                        {
+                            int d = 0;
+                            for (const JsonVariant dayData : tariffData.as<JsonArray>())
+                            {
+                                DataManager.data.base.days[d][t][m] = dayData.as<uint32_t>();
+                                d++;
+                            }
+                        }
+                        else // months
+                        {
+                            int i = 0;
+                            for (const JsonVariant monthData : tariffData.as<JsonArray>())
+                            {
+                                DataManager.data.base.months[i][t][m] = monthData.as<uint32_t>();
+                                i++;
+                            }
+                        }
+                        t++;
+                    }
+                }
+                m++;
+            }
+        }
+        DataManager.data.save(Data::SaveFlags::Base);
+
+        request->send(200, "text/html", "");
         digitalWrite(ledPin, HIGH);
     }
 
