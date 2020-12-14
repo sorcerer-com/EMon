@@ -59,6 +59,7 @@
 					}
 				}
 			}
+			$("input[name='dst_checkbox']")[0].checked = data.settings.dst;
 			$("#version")[0].value = data.version;
 			startDate = new Date();
 			date = new Date(data.time);
@@ -88,6 +89,25 @@
 		function setTime() {
 			$(`input[name='time']`)[0].value = Math.floor(new Date().getTime() / 1000);
 			$(`input[name='timeZone']`)[1].value = -(new Date().getTimezoneOffset() / 60);
+			
+			// check DST
+			var jan = new Date(new Date().getFullYear(), 0, 1);
+			var jul = new Date(new Date().getFullYear(), 6, 1);
+			var stdTimezoneOffset =  Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+			var dst = $("input[name='dst_checkbox']")[0].checked;
+			$("input[name='dst']")[1].value = new Date().getTimezoneOffset() < stdTimezoneOffset;
+			// if real dst, but not checked or isn't real dst, but checked
+			if ((new Date().getTimezoneOffset() < stdTimezoneOffset && !dst) || 
+				(new Date().getTimezoneOffset() >= stdTimezoneOffset && dst)) {
+					alert("It seems that Daylight saving time is changed, so check the correctness of your Tariff Start Hours.");
+			}
+		}
+		function dstChanged(input) {
+			$(`input[name='timeZone']`)[0].value = Number($(`input[name='timeZone']`)[0].value) + (input.checked ? 1 : -1);
+			$(`input[name='tariffStartHours[]']`)[0].value = Number($(`input[name='tariffStartHours[]']`)[0].value) + (input.checked ? 1 : -1);
+			$(`input[name='tariffStartHours[]']`)[1].value = Number($(`input[name='tariffStartHours[]']`)[1].value) + (input.checked ? 1 : -1);
+			$(`input[name='tariffStartHours[]']`)[2].value = Number($(`input[name='tariffStartHours[]']`)[2].value) + (input.checked ? 1 : -1);
+			$(`input[name='dst']`)[0].value = input.checked;
 		}
 	</script>
 
@@ -118,6 +138,9 @@
 				<form id="base_settings" action="/settings" method="post">
 					<p>Time Zone:</p>
 					<input type="number" name="timeZone" min="-11" max="12" required>
+					<p>Daylight saving time:</p>
+					<input type="checkbox" name="dst_checkbox" onchange="dstChanged(this)">
+					<input type="hidden" name="dst">
 					<p>Tariff Start Hours 1:</p>
 					<input type="number" name="tariffStartHours[]" min="0" max="23" required>
 					<p>Tariff Start Hours 2:</p>
@@ -170,6 +193,7 @@
 					<p id="time">Current time:&nbsp;<span></span></p>
 					<input type="hidden" name="time" value="">
 					<input type="hidden" name="timeZone" min="-11" max="12" value="">
+					<input type="hidden" name="dst" value="">
 					<input type="submit" value="Update time" onclick="setTime()">
 				</form>
 				<hr />

@@ -118,6 +118,7 @@ private:
 
         // settings
         root["settings"]["timeZone"] = DataManager.data.settings.timeZone;
+        root["settings"]["dst"] = DataManager.data.settings.dst;
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {
             root["settings"]["tariffStartHours"][t] = DataManager.data.settings.tariffStartHours[t];
@@ -220,6 +221,8 @@ private:
             // basic settings
             if (name == "timeZone")
                 DataManager.data.settings.timeZone = value.toInt();
+            else if (name == "dst")
+                DataManager.data.settings.dst = (value == "true");
             else if (name == "tariffStartHours[]")
             {
                 DataManager.data.settings.tariffStartHours[listParamIdx] = value.toInt();
@@ -491,6 +494,7 @@ private:
         result += SF("lastSavedHour: ") + String(DataManager.data.base.lastSavedHour) + SF(", ");
         result += SF("lastSavedDay: ") + String(DataManager.data.base.lastSavedDay) + SF(", ");
         result += SF("lastSavedMonth: ") + String(DataManager.data.base.lastSavedMonth) + SF(", ");
+        result += SF("DST: ") + String(DataManager.data.settings.dst) + SF(", ");
         result += SF("Tariffs: ");
         for (int t = 0; t < TARIFFS_COUNT; t++)
         {

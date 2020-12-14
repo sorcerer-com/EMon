@@ -38,6 +38,7 @@ public:
     {
         // basic settings
         int8_t timeZone = 0;
+        bool dst = false;
         uint8_t tariffStartHours[TARIFFS_COUNT] = {0, 0, 0};
         double tariffPrices[TARIFFS_COUNT] = {0.0, 0.0, 0.0};
         uint8_t billDay = 1;
@@ -125,6 +126,7 @@ public:
 
         // basic settings
         settings.timeZone = 0;
+        settings.dst = false;
         memset(settings.tariffStartHours, 0, sizeof(settings.tariffStartHours));
         memset(settings.tariffPrices, 0, sizeof(settings.tariffPrices));
         settings.billDay = 1;
