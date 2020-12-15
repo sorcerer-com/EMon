@@ -51,10 +51,25 @@ $(window).on("data", function (e, data) {
 	}
 
 	// TODO: maybe add tariffs hint - price
-	// add monitors hints
+	for (var t = 0; t < data.tariffsCount - 1; t++) {
+		if (data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1]) {
+			// remove unused tariffs
+			$(`.tariff-${t + 1}`).remove();
+			$(`.ch-year-tariff-${t + 1}`).remove();
+		}
+	}
+
 	for (var m = 0; m < data.monitorsCount; m++) {
 		if (data.settings.monitorsNames[m] != "") {
+			// add monitors hints
 			$(`.monitor-${m + 1}`).prop("title", data.settings.monitorsNames[m]);
+		} 
+		else if (!isMonitorVisible(data, m)) {
+			// remove monitors without name
+			$(`.monitor-${m + 1}`).remove();
+			$(`.section-last-24-hours-monitor-${m + 1}`).remove();
+			$(`.section-last-month-monitor-${m + 1}`).remove();
+			$(`.section-last-year-monitor-${m + 1}`).remove();
 		}
 	}
 
@@ -405,10 +420,15 @@ function InitializeSwiper() {
 // Current
 function drawTotalConsumption(canvasName) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+
 		// sum by tariffs
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
 			values.push(0);
+			if (t < data.tariffsCount - 1 && data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1])
+				continue;
 			for (var m = 0; m < data.monitorsCount; m++) {
 				values[t] += toKilo(data.current.month[m][t]);
 			}
@@ -428,12 +448,21 @@ function drawTotalConsumption(canvasName) {
 
 function drawCurrentUsage(canvasName) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+
 		var maxValue = Math.max.apply(Math, data.current.energy);
+		var values = [];
+		for (var m = 0; m < data.monitorsCount; m++) {
+			if (!isMonitorVisible(data, m))
+				continue;
+			values.push(data.current.energy[m]);
+		}
 
 		clearCanvas(canvasName);
 		drawCircularChart(
 			canvasName,
-			data.current.energy,
+			values,
 			maxValue * 1.2,
 			{
 				radius: 110,
@@ -445,6 +474,9 @@ function drawCurrentUsage(canvasName) {
 
 function drawLast24Hours(canvasName, monitorIdx) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+
 		var labels = [];
 		var values = [];
 		var colors = [];
@@ -481,6 +513,9 @@ function drawLast24Hours(canvasName, monitorIdx) {
 
 function drawLastMonth(canvasName, monitorIdx) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+			
 		var labels = [];
 		var dt = new Date(data.time);
 		var daysCount = new Date(dt.getUTCFullYear(), dt.getUTCMonth(), 0).getDate(); // get previous month length
@@ -521,8 +556,13 @@ function drawLastMonth(canvasName, monitorIdx) {
 // Sections
 function drawCurrentHour(canvasName) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
+			if (!isMonitorVisible(data, m))
+				continue;
 			values.push(toFloat(data.current.hour[m]));
 		}
 
@@ -539,12 +579,19 @@ function drawCurrentHour(canvasName) {
 
 function drawCurrentDay(canvasName) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+			
 		var labels = [];
 		var values = [];
 		for (var m = 0; m < data.monitorsCount; m++) {
+			if (!isMonitorVisible(data, m))
+				continue;
 			labels.push("Monitor " + (m + 1));
 			values.push([]);
 			for (var t = 0; t < data.tariffsCount; t++) {
+				if (t < data.tariffsCount - 1 && data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1])
+					continue;
 				values[m].push(toKilo(data.current.day[m][t]));
 			}
 		}
@@ -561,12 +608,17 @@ function drawCurrentDay(canvasName) {
 // History
 function drawLastYear(canvasName, monitorIdx) {
 	$(window).on("data", function (e, data) {
+		if (document.getElementById(canvasName) == null)
+			return;
+			
 		// sum by tariffs
 		var values = [];
 		for (var t = 0; t < data.tariffsCount; t++) {
 			values.push([]);
 			for (var i = 0; i < 12; i++) {
 				values[t].push(0);
+				if (t < data.tariffsCount - 1 && data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1])
+					continue;
 
 				if (monitorIdx != undefined) {
 					values[t][i] = toKilo(data.months[monitorIdx][t][i]);
@@ -585,12 +637,16 @@ function drawLastYear(canvasName, monitorIdx) {
 			months.push(months[0]);
 			months.shift();
 			for (var t = 0; t < data.tariffsCount; t++) {
+				if (t < data.tariffsCount - 1 && data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1])
+					continue;
 				values[t].push(values[t][0]);
 				values[t].shift();
 			}
 		}
 		months.reverse();
 		for (var t = 0; t < data.tariffsCount; t++) {
+			if (t < data.tariffsCount - 1 && data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1])
+				continue;
 			values[t].reverse();
 		}
 
@@ -673,6 +729,14 @@ function lastYear(data, tariffIdx, monitorIdx) {
 		}
 	}
 	return result;
+}
+
+function isMonitorVisible(data, monitorIdx) {
+	for (var m = 0; m < data.monitorsCount; m++) {
+		if (data.settings.monitorsNames[m] != "" && data.settings.monitorsNames[monitorIdx] == "")
+			return false;
+	}
+	return true; // if monitor name isn't empty or all monitor names are empty
 }
 
 function clearCanvas(canvasName) {
