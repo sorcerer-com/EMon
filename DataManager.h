@@ -105,14 +105,9 @@ public:
             // if millis rollover
             if (millis() > 4000000000) // rollover at 4294967296
             {
-                if (internet) // if there is internet fix the start time by reseting
-                    startTime = 0;
-                else
-                {
-                    // if there is no internet add millis value to startTime and write to storage
-                    data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
-                    data.save(Data::SaveFlags::Base);
-                }
+                // add millis value to startTime and write to storage
+                data.base.startTime = startTime + millis() / MILLIS_IN_A_SECOND; // set current time
+                data.save(Data::SaveFlags::Base);
                 DEBUGLOG("DataManager", "Millis rollover, internet: %d", internet);
                 ESP.restart();
             }
@@ -235,7 +230,7 @@ private:
         data.base.lastSavedDay = dt.Day;
         // re-sync current time once per day if there is internet
         if (internet)
-            startTime = 0;
+            setStartTime(getTime());
 
         int year = dt.Year;
         int prevMonth = dt.Month - 1;

@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <ESPmDNS.h>
+#include <NetBIOS.h>
 
 #define REMOTE_DEBUG
 
@@ -90,6 +91,8 @@ void setup()
     DEBUGLOG("EMonitor", "MDNS responder started");
     MDNS.addService("http", "tcp", 80);
   }
+
+  NBNS.begin("emon");
 
   server.begin();
 
