@@ -8,6 +8,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <ESP8266NetBIOS.h>
 #include <FS.h>
 
 //#define REMOTE_DEBUG
@@ -73,6 +74,8 @@ void setup()
     DEBUGLOG("EMonitor", "MDNS responder started");
     MDNS.addService("http", "tcp", 80);
   }
+
+  NBNS.begin("emon");
 
   //ask server to track these headers
   const char *headerkeys[] = {"Referer", "Cookie"};
