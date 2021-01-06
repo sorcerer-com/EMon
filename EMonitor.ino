@@ -92,7 +92,7 @@ void setup()
     MDNS.addService("http", "tcp", 80);
   }
 
-  NBNS.begin("emon");
+  //TODO: NBNS.begin("emon"); // https://github.com/espressif/arduino-esp32/issues/4692
 
   server.begin();
 

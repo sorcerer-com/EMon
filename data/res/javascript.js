@@ -45,11 +45,6 @@ $(window).on("data", function (e, data) {
 		$("header span a").css("font-size", "0.8em").css("color", "red");
 	}
 
-	if ($(".swiper-container").length > 0) {
-		// mobile
-		InitializeSwiper();
-	}
-
 	// TODO: maybe add tariffs hint - price
 	for (var t = 0; t < data.tariffsCount - 1; t++) {
 		if (data.settings.tariffStartHours[t] == data.settings.tariffStartHours[t + 1]) {
@@ -71,6 +66,11 @@ $(window).on("data", function (e, data) {
 			$(`.section-last-month-monitor-${m + 1}`).remove();
 			$(`.section-last-year-monitor-${m + 1}`).remove();
 		}
+	}
+
+	if ($(".swiper-container").length > 0) {
+		// mobile
+		InitializeSwiper();
 	}
 
 	// Consumption
@@ -400,7 +400,9 @@ $(window).on("data", function (e, data) {
 
 function InitializeSwiper() {
 	// Initialize Swiper
-	var swiper = new Swiper('.swiper-container', {
+	if (window.swiper)
+		return;
+	window.swiper = new Swiper('.swiper-container', {
 		slidesPerView: 1,
 		spaceBetween: 30,
 		keyboard: {

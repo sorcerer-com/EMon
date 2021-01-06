@@ -133,10 +133,10 @@ private:
         root["settings"]["coefficient"] = DataManager.data.settings.coefficient;
         root["settings"]["wifi_ssid"] = DataManager.data.settings.wifi_ssid;
         root["settings"]["wifi_passphrase"] = DataManager.data.settings.wifi_passphrase;
-        root["settings"]["wifi_ip"] = DataManager.data.settings.wifi_ip;
-        root["settings"]["wifi_gateway"] = DataManager.data.settings.wifi_gateway;
-        root["settings"]["wifi_subnet"] = DataManager.data.settings.wifi_subnet;
-        root["settings"]["wifi_dns"] = DataManager.data.settings.wifi_dns;
+        root["settings"]["wifi_ip"] = IPAddress(DataManager.data.settings.wifi_ip).toString();
+        root["settings"]["wifi_gateway"] = IPAddress(DataManager.data.settings.wifi_gateway).toString();
+        root["settings"]["wifi_subnet"] = IPAddress(DataManager.data.settings.wifi_subnet).toString();
+        root["settings"]["wifi_dns"] = IPAddress(DataManager.data.settings.wifi_dns).toString();
 
         // current data
         for (int m = 0; m < MONITORS_COUNT; m++)
